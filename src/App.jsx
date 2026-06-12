@@ -7,9 +7,10 @@ const LOGO_URL = 'https://drinksolzi.com/cdn/shop/files/solzi-solzi-solar-burst-
 const BADGE_URL = 'https://drinksolzi.com/cdn/shop/files/solzi-badge-logo_-seek-the-unexpected-solar-burst-rgb.svg?v=1770842938'
 
 const MOVEMENT_TYPES = {
-  'Marketing': ['Sampling - Events', 'Sampling - Retail PopUp', 'Founder Use', 'Influencer Gifting', 'Photoshoot', 'Strategic Seeding', 'UGC / Content'],
-  'Retail': ['Acquisition Samples', 'First Case Free', 'Retail Drop'],
-  'Customer': ['Offices', 'Manual DTC Order'],
+  'Sampling': ['Sampling - Events', 'Sampling - Retail MAC', 'Sampling - Popups'],
+  'Marketing': ['Strategic Seeding', 'Founder Use', 'Influencer Gifting', 'Photoshoot', 'UGC / Content'],
+  'Retail': ['First Case Free', 'Retail Order'],
+  'Customer': ['DTC Order', 'Offices'],
   'Shrinkage': ['Damaged / Lost'],
 }
 
@@ -79,7 +80,6 @@ const s = {
     cursor: 'pointer',
     transition: 'all 0.15s',
   }),
-  // Inventory panel
   invPanel: {
     margin: '14px 20px 0',
     background: B.white,
