@@ -7,10 +7,10 @@ const LOGO_URL = 'https://drinksolzi.com/cdn/shop/files/solzi-solzi-solar-burst-
 const BADGE_URL = 'https://drinksolzi.com/cdn/shop/files/solzi-badge-logo_-seek-the-unexpected-solar-burst-rgb.svg?v=1770842938'
 
 const MOVEMENT_TYPES = {
-  'Sampling': ['Retail MAC', 'Event', 'Popup', 'Office Drop'],
-  'Marketing': ['Strategic Seeding', 'Influencer Gifting', 'UGC / Content', 'Photoshoot', 'Founder Use'],
-  'Trade': ['First Case Free', 'Wholesale Sample'],
-  'Shrinkage': ['Damaged / Lost', 'Adjustment'],
+  'Marketing': ['Sampling - Events', 'Sampling - Retail PopUp', 'Founder Use', 'Influencer Gifting', 'Photoshoot', 'Strategic Seeding', 'UGC / Content'],
+  'Retail': ['Acquisition Samples', 'First Case Free', 'Retail Drop'],
+  'Customer': ['Offices', 'Manual DTC Order'],
+  'Shrinkage': ['Damaged / Lost'],
 }
 
 // Site palette: cream bg, terracotta accent, dark espresso text
