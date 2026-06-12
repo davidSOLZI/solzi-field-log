@@ -1,8 +1,10 @@
 import { useState } from 'react'
 
 const SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL
-
 const CANS_PER_CASE = 12
+
+const LOGO_URL = 'https://drinksolzi.com/cdn/shop/files/solzi-solzi-solar-burst-rgb.svg?v=1770826910'
+const BADGE_URL = 'https://drinksolzi.com/cdn/shop/files/solzi-badge-logo_-seek-the-unexpected-solar-burst-rgb.svg?v=1770842938'
 
 const MOVEMENT_TYPES = {
   'Sampling': ['Retail MAC', 'Event', 'Popup', 'Office Drop'],
@@ -11,18 +13,20 @@ const MOVEMENT_TYPES = {
   'Shrinkage': ['Damaged / Lost', 'Adjustment'],
 }
 
+// Site palette: cream bg, terracotta accent, dark espresso text
 const B = {
-  bg:       '#1A0A05',
-  surface:  '#2A1108',
-  border:   '#3D1A0A',
-  accent:   '#C4501A',
-  accentLt: '#E07040',
-  text:     '#F5E6D8',
-  muted:    '#8C6050',
-  pill:     '#3D1A0A',
-  pillText: '#E07040',
-  success:  '#2A6040',
-  successText: '#7FD0A0',
+  bg:        '#F5EFE4',   // site cream
+  surface:   '#EDE5D6',   // slightly darker cream for cards
+  border:    '#D4C4A8',   // warm tan border
+  accent:    '#C4501A',   // terracotta / solzi orange-red
+  accentDk:  '#9C3D12',   // darker terracotta for hover
+  accentLt:  '#E8714A',   // lighter terracotta
+  text:      '#1E1008',   // dark espresso
+  textMid:   '#5C3D22',   // mid brown
+  textMuted: '#9C7B58',   // muted warm brown
+  green:     '#2D5A27',   // SOLZI green
+  greenLt:   '#EAF0E8',   // light green bg
+  white:     '#FFFDF8',   // off white
 }
 
 const s = {
@@ -31,74 +35,93 @@ const s = {
     background: B.bg,
     color: B.text,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    padding: '0 0 80px',
+    paddingBottom: 60,
   },
   header: {
-    padding: '52px 20px 20px',
+    padding: '48px 20px 16px',
     borderBottom: `1px solid ${B.border}`,
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    background: B.white,
+  },
+  logoRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoImg: {
+    width: 38,
+    height: 38,
+    objectFit: 'contain',
   },
   wordmark: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 700,
-    letterSpacing: '0.08em',
+    letterSpacing: '0.1em',
     color: B.text,
     margin: 0,
   },
   subtitle: {
-    fontSize: 11,
-    letterSpacing: '0.15em',
-    color: B.muted,
+    fontSize: 10,
+    letterSpacing: '0.18em',
+    color: B.textMuted,
     textTransform: 'uppercase',
-    margin: '2px 0 0',
+    margin: '1px 0 0',
   },
   userBtn: (active) => ({
     padding: '6px 14px',
     borderRadius: 20,
-    border: `1px solid ${active ? B.accent : B.border}`,
+    border: `1.5px solid ${active ? B.accent : B.border}`,
     background: active ? B.accent : 'transparent',
-    color: active ? '#fff' : B.muted,
+    color: active ? B.white : B.textMuted,
     fontSize: 13,
-    fontWeight: 500,
+    fontWeight: 600,
     cursor: 'pointer',
     transition: 'all 0.15s',
   }),
   section: {
-    padding: '20px 20px 0',
+    padding: '18px 20px 0',
   },
-  label: {
-    fontSize: 11,
-    letterSpacing: '0.12em',
+  sectionLabel: {
+    fontSize: 10,
+    letterSpacing: '0.15em',
     textTransform: 'uppercase',
-    color: B.muted,
+    color: B.textMuted,
     marginBottom: 10,
+    fontWeight: 600,
   },
-  categoryRow: {
-    display: 'flex',
-    gap: 8,
-    flexWrap: 'wrap',
-    marginBottom: 8,
+  categoryBlock: {
+    marginBottom: 6,
+    background: B.white,
+    borderRadius: 12,
+    border: `1px solid ${B.border}`,
+    overflow: 'hidden',
   },
-  catBtn: (active) => ({
-    padding: '7px 14px',
-    borderRadius: 20,
-    border: `1px solid ${active ? B.accent : B.border}`,
-    background: active ? B.accent : B.surface,
-    color: active ? '#fff' : B.text,
+  categoryHeader: (active) => ({
+    padding: '11px 14px',
     fontSize: 13,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: active ? B.white : B.textMid,
+    background: active ? B.accent : B.surface,
     cursor: 'pointer',
-    fontWeight: active ? 600 : 400,
+    borderBottom: active ? `1px solid ${B.accentDk}` : 'none',
     transition: 'all 0.15s',
-    whiteSpace: 'nowrap',
   }),
+  typeGrid: {
+    padding: '10px 12px 12px',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
   typeBtn: (active) => ({
-    padding: '8px 14px',
-    borderRadius: 8,
-    border: `1px solid ${active ? B.accentLt : B.border}`,
-    background: active ? '#3D1A0A' : B.surface,
-    color: active ? B.accentLt : B.muted,
+    padding: '7px 13px',
+    borderRadius: 20,
+    border: `1.5px solid ${active ? B.accent : B.border}`,
+    background: active ? B.accentLt : B.bg,
+    color: active ? B.white : B.textMid,
     fontSize: 13,
     cursor: 'pointer',
     fontWeight: active ? 600 : 400,
@@ -106,64 +129,146 @@ const s = {
     whiteSpace: 'nowrap',
   }),
   qtySection: {
-    padding: '0 20px',
-    marginTop: 20,
+    padding: '16px 20px 0',
   },
-  qtyRow: {
-    display: 'flex',
-    gap: 8,
+  qtyBlock: {
+    background: B.white,
+    borderRadius: 12,
+    border: `1px solid ${B.border}`,
+    overflow: 'hidden',
     marginBottom: 8,
-    alignItems: 'center',
-    flexWrap: 'wrap',
   },
-  qtyLabel: {
+  qtyBlockHeader: {
+    padding: '8px 14px',
+    background: B.surface,
+    borderBottom: `1px solid ${B.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  qtyBlockLabel: {
     fontSize: 11,
+    fontWeight: 700,
     letterSpacing: '0.12em',
     textTransform: 'uppercase',
-    color: B.muted,
-    width: 44,
-    flexShrink: 0,
+    color: B.textMid,
   },
-  qtyBtn: (active) => ({
-    padding: '8px 0',
-    width: 44,
-    borderRadius: 8,
-    border: `1px solid ${active ? B.accent : B.border}`,
-    background: active ? B.accent : B.surface,
-    color: active ? '#fff' : B.text,
-    fontSize: 14,
-    fontWeight: 500,
+  qtyRow: {
+    padding: '10px 12px',
+    display: 'flex',
+    gap: 7,
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
+  },
+  // CYLINDER shape for cans
+  canBtn: (active) => ({
+    width: 42,
+    height: 42,
+    borderRadius: '50%',
+    border: `2px solid ${active ? B.accent : B.border}`,
+    background: active ? B.accent : B.bg,
+    color: active ? B.white : B.textMid,
+    fontSize: 13,
+    fontWeight: 600,
     cursor: 'pointer',
     textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    transition: 'all 0.15s',
+    position: 'relative',
+  }),
+  canBtnInner: (active) => ({
+    width: 42,
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 0,
+    cursor: 'pointer',
+  }),
+  canCylTop: (active) => ({
+    width: 32,
+    height: 8,
+    borderRadius: '50%',
+    background: active ? B.accentDk : B.border,
+    border: `2px solid ${active ? B.accentDk : B.border}`,
+  }),
+  canCylBody: (active) => ({
+    width: 32,
+    height: 22,
+    background: active ? B.accent : B.surface,
+    border: `2px solid ${active ? B.accent : B.border}`,
+    borderTop: 'none',
+    borderBottom: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 12,
+    fontWeight: 700,
+    color: active ? B.white : B.textMid,
+  }),
+  canCylBottom: (active) => ({
+    width: 32,
+    height: 8,
+    borderRadius: '50%',
+    background: active ? B.accentDk : B.border,
+    border: `2px solid ${active ? B.accentDk : B.border}`,
+  }),
+  // SQUARE shape for cases
+  caseBtn: (active) => ({
+    width: 42,
+    height: 42,
+    borderRadius: 6,
+    border: `2px solid ${active ? B.accent : B.border}`,
+    background: active ? B.accent : B.bg,
+    color: active ? B.white : B.textMid,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
+    textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
     transition: 'all 0.15s',
   }),
   customInput: {
-    width: 52,
-    padding: '8px 6px',
+    width: 42,
+    height: 42,
+    padding: '0 4px',
     borderRadius: 8,
-    border: `1px solid ${B.border}`,
-    background: B.surface,
+    border: `2px solid ${B.border}`,
+    background: B.bg,
     color: B.text,
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
     outline: 'none',
+    flexShrink: 0,
+    boxSizing: 'border-box',
   },
-  totalLine: {
-    marginTop: 4,
+  totalPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    background: B.greenLt,
+    border: `1px solid ${B.green}`,
+    borderRadius: 20,
+    padding: '5px 14px',
     fontSize: 13,
-    color: B.muted,
-    paddingLeft: 52,
-  },
-  totalCans: {
-    color: B.accentLt,
+    color: B.green,
     fontWeight: 600,
+    marginTop: 8,
+    marginLeft: 20,
   },
   notesInput: {
     width: '100%',
     padding: '12px 14px',
     borderRadius: 10,
-    border: `1px solid ${B.border}`,
-    background: B.surface,
+    border: `1.5px solid ${B.border}`,
+    background: B.white,
     color: B.text,
     fontSize: 14,
     resize: 'none',
@@ -176,10 +281,10 @@ const s = {
     padding: '16px',
     borderRadius: 12,
     border: 'none',
-    background: ready ? B.accent : B.surface,
-    color: ready ? '#fff' : B.muted,
+    background: ready ? B.accent : B.border,
+    color: ready ? B.white : B.textMuted,
     fontSize: 16,
-    fontWeight: 600,
+    fontWeight: 700,
     cursor: ready ? 'pointer' : 'default',
     letterSpacing: '0.04em',
     transition: 'all 0.2s',
@@ -192,22 +297,61 @@ const s = {
     transform: 'translateX(-50%)',
     padding: '12px 24px',
     borderRadius: 24,
-    background: type === 'success' ? B.success : '#5C1A1A',
-    color: type === 'success' ? B.successText : '#F0A0A0',
+    background: type === 'success' ? B.green : '#8B2020',
+    color: '#fff',
     fontSize: 14,
-    fontWeight: 500,
+    fontWeight: 600,
     whiteSpace: 'nowrap',
     zIndex: 100,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
   }),
 }
 
 const CAN_PRESETS = [1, 2, 3, 4, 6]
 const CASE_PRESETS = [1, 2, 3, 4, 6]
 
+function CylinderBtn({ n, active, onClick }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }} onClick={onClick}>
+      <div style={s.canCylTop(active)} />
+      <div style={s.canCylBody(active)}>+{n}</div>
+      <div style={s.canCylBottom(active)} />
+    </div>
+  )
+}
+
+function CylinderCustom({ value, onChange }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+      <div style={{ ...s.canCylTop(false), background: B.border }} />
+      <div style={{ ...s.canCylBody(false), width: 42, padding: 0 }}>
+        <input
+          type="number"
+          min="0"
+          placeholder="?"
+          value={value}
+          onChange={onChange}
+          style={{
+            width: '100%',
+            height: '100%',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            textAlign: 'center',
+            fontSize: 12,
+            fontWeight: 700,
+            color: B.textMid,
+            fontFamily: 'inherit',
+          }}
+        />
+      </div>
+      <div style={{ ...s.canCylBottom(false), background: B.border }} />
+    </div>
+  )
+}
+
 export default function App() {
   const [user, setUser] = useState('David')
-  const [category, setCategory] = useState(null)
   const [movementType, setMovementType] = useState(null)
   const [canQty, setCanQty] = useState(0)
   const [customCans, setCustomCans] = useState('')
@@ -229,7 +373,6 @@ export default function App() {
   }
 
   function resetForm() {
-    setCategory(null)
     setMovementType(null)
     setCanQty(0)
     setCaseQty(0)
@@ -241,24 +384,12 @@ export default function App() {
   async function handleSubmit() {
     if (!ready || submitting) return
     setSubmitting(true)
-
     const now = new Date()
     const date = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
     const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     const cases = caseQty === 'custom' ? (parseInt(customCases) || 0) : caseQty
     const cans = canQty === 'custom' ? (parseInt(customCans) || 0) : canQty
-
-    const payload = {
-      date,
-      time,
-      submittedBy: user,
-      movementType,
-      cases,
-      cans,
-      totalCans,
-      notes,
-    }
-
+    const payload = { date, time, submittedBy: user, movementType, cases, cans, totalCans, notes }
     try {
       await fetch(SCRIPT_URL, {
         method: 'POST',
@@ -268,7 +399,7 @@ export default function App() {
       })
       showToast(`Logged ${totalCans} cans ✓`, 'success')
       resetForm()
-    } catch (err) {
+    } catch {
       showToast('Connection error — try again', 'error')
     } finally {
       setSubmitting(false)
@@ -282,9 +413,12 @@ export default function App() {
     <div style={s.app}>
       {/* Header */}
       <div style={s.header}>
-        <div>
-          <p style={s.wordmark}>SOLZI</p>
-          <p style={s.subtitle}>Field Log</p>
+        <div style={s.logoRow}>
+          <img src={LOGO_URL} alt="SOLZI" style={s.logoImg} />
+          <div>
+            <p style={s.wordmark}>SOLZI</p>
+            <p style={s.subtitle}>Field Log</p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {['David', 'Sophy'].map(u => (
@@ -293,96 +427,94 @@ export default function App() {
         </div>
       </div>
 
-      {/* Category */}
+      {/* Movement Types — all visible, categories as headers */}
       <div style={s.section}>
-        <p style={s.label}>Category</p>
-        <div style={s.categoryRow}>
-          {Object.keys(MOVEMENT_TYPES).map(cat => (
-            <button
-              key={cat}
-              style={s.catBtn(category === cat)}
-              onClick={() => {
-                setCategory(cat)
-                setMovementType(null)
-              }}
-            >{cat}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* Movement Type */}
-      {category && (
-        <div style={{ ...s.section, marginTop: 12 }}>
-          <p style={s.label}>Type</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {MOVEMENT_TYPES[category].map(t => (
-              <button
-                key={t}
-                style={s.typeBtn(movementType === t)}
-                onClick={() => setMovementType(t)}
-              >{t}</button>
-            ))}
+        <p style={s.sectionLabel}>Movement Type</p>
+        {Object.entries(MOVEMENT_TYPES).map(([cat, types]) => (
+          <div key={cat} style={s.categoryBlock}>
+            <div style={s.categoryHeader(types.includes(movementType))}>
+              {cat}
+            </div>
+            <div style={s.typeGrid}>
+              {types.map(t => (
+                <button
+                  key={t}
+                  style={s.typeBtn(movementType === t)}
+                  onClick={() => setMovementType(t)}
+                >{t}</button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Quantity */}
       <div style={s.qtySection}>
-        {/* Cases row */}
-        <p style={{ ...s.label, marginTop: 20, marginBottom: 10 }}>Quantity</p>
-        <div style={s.qtyRow}>
-          <span style={s.qtyLabel}>Cases</span>
-          {CASE_PRESETS.map(n => (
-            <button
-              key={n}
-              style={s.qtyBtn(caseQty === n)}
-              onClick={() => { setCaseQty(n); setCustomCases('') }}
-            >+{n}</button>
-          ))}
-          <input
-            type="number"
-            min="0"
-            placeholder="?"
-            value={customCases}
-            style={s.customInput}
-            onChange={e => { setCustomCases(e.target.value); setCaseQty('custom') }}
-          />
+        <p style={s.sectionLabel}>Quantity</p>
+
+        {/* Cases — squares */}
+        <div style={s.qtyBlock}>
+          <div style={s.qtyBlockHeader}>
+            <span style={{ fontSize: 16 }}>📦</span>
+            <span style={s.qtyBlockLabel}>Cases <span style={{ fontWeight: 400, fontSize: 10, color: B.textMuted }}>(12 cans each)</span></span>
+          </div>
+          <div style={s.qtyRow}>
+            {CASE_PRESETS.map(n => (
+              <button
+                key={n}
+                style={s.caseBtn(caseQty === n)}
+                onClick={() => { setCaseQty(n); setCustomCases('') }}
+              >+{n}</button>
+            ))}
+            <input
+              type="number"
+              min="0"
+              placeholder="?"
+              value={customCases}
+              style={s.customInput}
+              onChange={e => { setCustomCases(e.target.value); setCaseQty('custom') }}
+            />
+          </div>
         </div>
 
-        {/* Cans row */}
-        <div style={s.qtyRow}>
-          <span style={s.qtyLabel}>Cans</span>
-          {CAN_PRESETS.map(n => (
-            <button
-              key={n}
-              style={s.qtyBtn(canQty === n)}
-              onClick={() => { setCanQty(n); setCustomCans('') }}
-            >+{n}</button>
-          ))}
-          <input
-            type="number"
-            min="0"
-            placeholder="?"
-            value={customCans}
-            style={s.customInput}
-            onChange={e => { setCustomCans(e.target.value); setCanQty('custom') }}
-          />
+        {/* Cans — cylinders */}
+        <div style={s.qtyBlock}>
+          <div style={s.qtyBlockHeader}>
+            <span style={{ fontSize: 16 }}>🥤</span>
+            <span style={s.qtyBlockLabel}>Cans <span style={{ fontWeight: 400, fontSize: 10, color: B.textMuted }}>(individual)</span></span>
+          </div>
+          <div style={s.qtyRow}>
+            {CAN_PRESETS.map(n => (
+              <CylinderBtn
+                key={n}
+                n={n}
+                active={canQty === n}
+                onClick={() => { setCanQty(n); setCustomCans('') }}
+              />
+            ))}
+            <CylinderCustom
+              value={customCans}
+              onChange={e => { setCustomCans(e.target.value); setCanQty('custom') }}
+            />
+          </div>
         </div>
 
         {/* Total */}
         {totalCans > 0 && (
-          <p style={s.totalLine}>
-            Total: <span style={s.totalCans}>{totalCans} cans</span>
+          <div style={s.totalPill}>
+            ✓ {totalCans} cans total
             {displayCases > 0 && displayCans > 0 && (
-              <span style={{ color: B.muted }}> ({displayCases} case{displayCases !== 1 ? 's' : ''} + {displayCans} can{displayCans !== 1 ? 's' : ''})</span>
+              <span style={{ fontWeight: 400, color: B.green }}>
+                &nbsp;({displayCases} case{displayCases !== 1 ? 's' : ''} + {displayCans} can{displayCans !== 1 ? 's' : ''})
+              </span>
             )}
-          </p>
+          </div>
         )}
       </div>
 
       {/* Notes */}
-      <div style={{ ...s.section, marginTop: 20 }}>
-        <p style={s.label}>Notes <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
+      <div style={{ ...s.section, marginTop: 16 }}>
+        <p style={s.sectionLabel}>Notes <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
         <textarea
           rows={2}
           placeholder="Location, person, event name..."
@@ -397,6 +529,11 @@ export default function App() {
         <button style={s.submitBtn(ready)} onClick={handleSubmit} disabled={!ready || submitting}>
           {submitting ? 'Logging...' : ready ? `Log ${totalCans} cans — ${movementType}` : 'Select type + quantity'}
         </button>
+      </div>
+
+      {/* Badge watermark */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28, opacity: 0.18 }}>
+        <img src={BADGE_URL} alt="" style={{ width: 60, height: 60 }} />
       </div>
 
       {/* Toast */}
