@@ -50,25 +50,9 @@ const s = {
     alignItems: 'center',
     gap: 10,
   },
-  logoImg: {
-    width: 38,
-    height: 38,
-    objectFit: 'contain',
-  },
-  wordmark: {
-    fontSize: 20,
-    fontWeight: 700,
-    letterSpacing: '0.1em',
-    color: B.text,
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 10,
-    letterSpacing: '0.18em',
-    color: B.textMuted,
-    textTransform: 'uppercase',
-    margin: '1px 0 0',
-  },
+  logoImg: { width: 38, height: 38, objectFit: 'contain' },
+  wordmark: { fontSize: 20, fontWeight: 700, letterSpacing: '0.1em', color: B.text, margin: 0 },
+  subtitle: { fontSize: 10, letterSpacing: '0.18em', color: B.textMuted, textTransform: 'uppercase', margin: '1px 0 0' },
   userBtn: (active) => ({
     padding: '6px 14px',
     borderRadius: 20,
@@ -80,14 +64,15 @@ const s = {
     cursor: 'pointer',
     transition: 'all 0.15s',
   }),
-  invPanel: {
+  // shared panel style
+  panel: {
     margin: '14px 20px 0',
     background: B.white,
     borderRadius: 12,
     border: `1px solid ${B.border}`,
     overflow: 'hidden',
   },
-  invHeader: {
+  panelHeader: {
     padding: '8px 14px',
     background: B.surface,
     borderBottom: `1px solid ${B.border}`,
@@ -95,14 +80,14 @@ const s = {
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  invHeaderLabel: {
+  panelLabel: {
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: '0.15em',
     textTransform: 'uppercase',
     color: B.textMid,
   },
-  invRefresh: {
+  refreshBtn: {
     fontSize: 11,
     color: B.textMuted,
     cursor: 'pointer',
@@ -111,36 +96,34 @@ const s = {
     padding: 0,
     fontFamily: 'inherit',
   },
-  invGrid: {
+  threeGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1fr',
     gap: 0,
   },
-  invCell: (last) => ({
+  cell: (last) => ({
     padding: '10px 14px',
     borderRight: last ? 'none' : `1px solid ${B.border}`,
   }),
-  invCellLabel: {
+  cellLabel: {
     fontSize: 10,
     color: B.textMuted,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
     marginBottom: 2,
   },
-  invCellValue: (isTotal) => ({
-    fontSize: isTotal ? 20 : 18,
+  cellValue: (accent) => ({
+    fontSize: accent ? 20 : 18,
     fontWeight: 700,
-    color: isTotal ? B.accent : B.text,
+    color: accent ? B.accent : B.text,
     lineHeight: 1,
   }),
-  invCellUnit: {
+  cellUnit: {
     fontSize: 10,
     color: B.textMuted,
     marginTop: 1,
   },
-  section: {
-    padding: '18px 20px 0',
-  },
+  section: { padding: '18px 20px 0' },
   sectionLabel: {
     fontSize: 10,
     letterSpacing: '0.15em',
@@ -186,9 +169,7 @@ const s = {
     transition: 'all 0.15s',
     whiteSpace: 'nowrap',
   }),
-  qtySection: {
-    padding: '16px 20px 0',
-  },
+  qtySection: { padding: '16px 20px 0' },
   qtyBlock: {
     background: B.white,
     borderRadius: 12,
@@ -220,118 +201,69 @@ const s = {
     overflowX: 'auto',
   },
   canCylTop: (active) => ({
-    width: 32,
-    height: 8,
-    borderRadius: '50%',
+    width: 32, height: 8, borderRadius: '50%',
     background: active ? B.accentDk : B.border,
     border: `2px solid ${active ? B.accentDk : B.border}`,
   }),
   canCylBody: (active) => ({
-    width: 32,
-    height: 22,
+    width: 32, height: 22,
     background: active ? B.accent : B.surface,
     border: `2px solid ${active ? B.accent : B.border}`,
-    borderTop: 'none',
-    borderBottom: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 12,
-    fontWeight: 700,
+    borderTop: 'none', borderBottom: 'none',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 12, fontWeight: 700,
     color: active ? B.white : B.textMid,
   }),
   canCylBottom: (active) => ({
-    width: 32,
-    height: 8,
-    borderRadius: '50%',
+    width: 32, height: 8, borderRadius: '50%',
     background: active ? B.accentDk : B.border,
     border: `2px solid ${active ? B.accentDk : B.border}`,
   }),
   caseBtn: (active) => ({
-    width: 42,
-    height: 42,
-    borderRadius: 6,
+    width: 42, height: 42, borderRadius: 6,
     border: `2px solid ${active ? B.accent : B.border}`,
     background: active ? B.accent : B.bg,
     color: active ? B.white : B.textMid,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: 'pointer',
-    textAlign: 'center',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    transition: 'all 0.15s',
+    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, transition: 'all 0.15s',
   }),
   customInput: {
-    width: 42,
-    height: 42,
-    padding: '0 4px',
-    borderRadius: 8,
-    border: `2px solid ${B.border}`,
-    background: B.bg,
-    color: B.text,
-    fontSize: 13,
-    textAlign: 'center',
-    outline: 'none',
-    flexShrink: 0,
-    boxSizing: 'border-box',
+    width: 42, height: 42, padding: '0 4px',
+    borderRadius: 8, border: `2px solid ${B.border}`,
+    background: B.bg, color: B.text,
+    fontSize: 13, textAlign: 'center', outline: 'none',
+    flexShrink: 0, boxSizing: 'border-box',
   },
   totalPill: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    background: B.greenLt,
-    border: `1px solid ${B.green}`,
-    borderRadius: 20,
-    padding: '5px 14px',
-    fontSize: 13,
-    color: B.green,
-    fontWeight: 600,
-    marginTop: 8,
-    marginLeft: 20,
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    background: B.greenLt, border: `1px solid ${B.green}`,
+    borderRadius: 20, padding: '5px 14px',
+    fontSize: 13, color: B.green, fontWeight: 600,
+    marginTop: 8, marginLeft: 20,
   },
   notesInput: {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: 10,
-    border: `1.5px solid ${B.border}`,
-    background: B.white,
-    color: B.text,
-    fontSize: 14,
-    resize: 'none',
-    outline: 'none',
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
+    width: '100%', padding: '12px 14px',
+    borderRadius: 10, border: `1.5px solid ${B.border}`,
+    background: B.white, color: B.text,
+    fontSize: 14, resize: 'none', outline: 'none',
+    boxSizing: 'border-box', fontFamily: 'inherit',
   },
   submitBtn: (ready) => ({
-    width: '100%',
-    padding: '16px',
-    borderRadius: 12,
-    border: 'none',
+    width: '100%', padding: '16px', borderRadius: 12, border: 'none',
     background: ready ? B.accent : B.border,
     color: ready ? B.white : B.textMuted,
-    fontSize: 16,
-    fontWeight: 700,
+    fontSize: 16, fontWeight: 700,
     cursor: ready ? 'pointer' : 'default',
-    letterSpacing: '0.04em',
-    transition: 'all 0.2s',
-    marginTop: 20,
+    letterSpacing: '0.04em', transition: 'all 0.2s', marginTop: 20,
   }),
   toast: (type) => ({
-    position: 'fixed',
-    bottom: 24,
-    left: '50%',
+    position: 'fixed', bottom: 24, left: '50%',
     transform: 'translateX(-50%)',
-    padding: '12px 24px',
-    borderRadius: 24,
+    padding: '12px 24px', borderRadius: 24,
     background: type === 'success' ? B.green : '#8B2020',
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 600,
-    whiteSpace: 'nowrap',
-    zIndex: 100,
+    color: '#fff', fontSize: 14, fontWeight: 600,
+    whiteSpace: 'nowrap', zIndex: 100,
     boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
   }),
 }
@@ -355,22 +287,13 @@ function CylinderCustom({ value, onChange }) {
       <div style={{ ...s.canCylTop(false), background: B.border }} />
       <div style={{ ...s.canCylBody(false), width: 42, padding: 0 }}>
         <input
-          type="number"
-          min="0"
-          placeholder="?"
-          value={value}
-          onChange={onChange}
+          type="number" min="0" placeholder="?"
+          value={value} onChange={onChange}
           style={{
-            width: '100%',
-            height: '100%',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            textAlign: 'center',
-            fontSize: 12,
-            fontWeight: 700,
-            color: B.textMid,
-            fontFamily: 'inherit',
+            width: '100%', height: '100%',
+            background: 'transparent', border: 'none', outline: 'none',
+            textAlign: 'center', fontSize: 12, fontWeight: 700,
+            color: B.textMid, fontFamily: 'inherit',
           }}
         />
       </div>
@@ -379,55 +302,79 @@ function CylinderCustom({ value, onChange }) {
   )
 }
 
-function InventoryPanel() {
-  const [inv, setInv] = useState(null)
+function DataPanels() {
+  const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  async function fetchInv() {
+  async function fetchData() {
     setLoading(true)
     try {
       const res = await fetch(SCRIPT_URL)
-      const data = await res.json()
-      if (data.status === 'ok') {
-        setInv({
-          airdrome: Math.round(data.airdrome),
-          tpl: Math.round(data.tpl),
-          total: Math.round(data.total),
-        })
-      }
+      const json = await res.json()
+      if (json.status === 'ok') setData(json)
     } catch {
-      setInv(null)
+      setData(null)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchInv() }, [])
+  useEffect(() => { fetchData() }, [])
 
-  const cells = [
-    { label: 'Airdrome', value: inv?.airdrome },
-    { label: '3PL', value: inv?.tpl },
-    { label: 'Total', value: inv?.total, isTotal: true },
-  ]
+  const fmt = (v) => loading ? '—' : data ? Math.round(v).toLocaleString() : '—'
+
+  // format week start as "Jun 9"
+  const weekLabel = data?.weekStart
+    ? (() => {
+        const parts = data.weekStart.split('/')
+        const d = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]))
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      })()
+    : 'this week'
 
   return (
-    <div style={s.invPanel}>
-      <div style={s.invHeader}>
-        <span style={s.invHeaderLabel}>Inventory</span>
-        <button style={s.invRefresh} onClick={fetchInv}>↻ refresh</button>
-      </div>
-      <div style={s.invGrid}>
-        {cells.map((c, i) => (
-          <div key={c.label} style={s.invCell(i === cells.length - 1)}>
-            <div style={s.invCellLabel}>{c.label}</div>
-            <div style={s.invCellValue(c.isTotal)}>
-              {loading ? '—' : inv ? c.value.toLocaleString() : '—'}
+    <>
+      {/* Inventory */}
+      <div style={s.panel}>
+        <div style={s.panelHeader}>
+          <span style={s.panelLabel}>Inventory</span>
+          <button style={s.refreshBtn} onClick={fetchData}>↻ refresh</button>
+        </div>
+        <div style={s.threeGrid}>
+          {[
+            { label: 'Airdrome', value: data?.airdrome },
+            { label: '3PL',      value: data?.tpl },
+            { label: 'Total',    value: data?.total, accent: true },
+          ].map((c, i, arr) => (
+            <div key={c.label} style={s.cell(i === arr.length - 1)}>
+              <div style={s.cellLabel}>{c.label}</div>
+              <div style={s.cellValue(c.accent)}>{fmt(c.value)}</div>
+              <div style={s.cellUnit}>cases</div>
             </div>
-            <div style={s.invCellUnit}>cases</div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Current Week Volume */}
+      <div style={{ ...s.panel, marginTop: 10 }}>
+        <div style={s.panelHeader}>
+          <span style={s.panelLabel}>Week of {weekLabel}</span>
+        </div>
+        <div style={s.threeGrid}>
+          {[
+            { label: 'Retail',    value: data?.weekRetail },
+            { label: 'Customer',  value: data?.weekCustomer },
+            { label: 'Marketing + Sampling', value: data?.weekMarketing, accent: false },
+          ].map((c, i, arr) => (
+            <div key={c.label} style={s.cell(i === arr.length - 1)}>
+              <div style={{ ...s.cellLabel, fontSize: 9 }}>{c.label}</div>
+              <div style={s.cellValue(false)}>{fmt(c.value)}</div>
+              <div style={s.cellUnit}>cases</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -455,10 +402,8 @@ export default function App() {
 
   function resetForm() {
     setMovementType(null)
-    setCanQty(0)
-    setCaseQty(0)
-    setCustomCans('')
-    setCustomCases('')
+    setCanQty(0); setCaseQty(0)
+    setCustomCans(''); setCustomCases('')
     setNotes('')
   }
 
@@ -473,8 +418,7 @@ export default function App() {
     const payload = { date, time, submittedBy: user, movementType, cases, cans, totalCans, notes }
     try {
       await fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
+        method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
@@ -508,24 +452,18 @@ export default function App() {
         </div>
       </div>
 
-      {/* Inventory Panel */}
-      <InventoryPanel />
+      {/* Inventory + Week panels */}
+      <DataPanels />
 
       {/* Movement Types */}
       <div style={s.section}>
         <p style={s.sectionLabel}>Movement Type</p>
         {Object.entries(MOVEMENT_TYPES).map(([cat, types]) => (
           <div key={cat} style={s.categoryBlock}>
-            <div style={s.categoryHeader(types.includes(movementType))}>
-              {cat}
-            </div>
+            <div style={s.categoryHeader(types.includes(movementType))}>{cat}</div>
             <div style={s.typeGrid}>
               {types.map(t => (
-                <button
-                  key={t}
-                  style={s.typeBtn(movementType === t)}
-                  onClick={() => setMovementType(t)}
-                >{t}</button>
+                <button key={t} style={s.typeBtn(movementType === t)} onClick={() => setMovementType(t)}>{t}</button>
               ))}
             </div>
           </div>
@@ -542,20 +480,12 @@ export default function App() {
           </div>
           <div style={s.qtyRow}>
             {CASE_PRESETS.map(n => (
-              <button
-                key={n}
-                style={s.caseBtn(caseQty === n)}
-                onClick={() => { setCaseQty(n); setCustomCases('') }}
-              >+{n}</button>
+              <button key={n} style={s.caseBtn(caseQty === n)}
+                onClick={() => { setCaseQty(n); setCustomCases('') }}>+{n}</button>
             ))}
-            <input
-              type="number"
-              min="0"
-              placeholder="?"
-              value={customCases}
+            <input type="number" min="0" placeholder="?" value={customCases}
               style={s.customInput}
-              onChange={e => { setCustomCases(e.target.value); setCaseQty('custom') }}
-            />
+              onChange={e => { setCustomCases(e.target.value); setCaseQty('custom') }} />
           </div>
         </div>
 
@@ -566,17 +496,11 @@ export default function App() {
           </div>
           <div style={s.qtyRow}>
             {CAN_PRESETS.map(n => (
-              <CylinderBtn
-                key={n}
-                n={n}
-                active={canQty === n}
-                onClick={() => { setCanQty(n); setCustomCans('') }}
-              />
+              <CylinderBtn key={n} n={n} active={canQty === n}
+                onClick={() => { setCanQty(n); setCustomCans('') }} />
             ))}
-            <CylinderCustom
-              value={customCans}
-              onChange={e => { setCustomCans(e.target.value); setCanQty('custom') }}
-            />
+            <CylinderCustom value={customCans}
+              onChange={e => { setCustomCans(e.target.value); setCanQty('custom') }} />
           </div>
         </div>
 
@@ -595,13 +519,9 @@ export default function App() {
       {/* Notes */}
       <div style={{ ...s.section, marginTop: 16 }}>
         <p style={s.sectionLabel}>Notes <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
-        <textarea
-          rows={2}
-          placeholder="Location, person, event name..."
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          style={s.notesInput}
-        />
+        <textarea rows={2} placeholder="Location, person, event name..."
+          value={notes} onChange={e => setNotes(e.target.value)}
+          style={s.notesInput} />
       </div>
 
       {/* Submit */}
@@ -611,7 +531,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* Badge watermark */}
+      {/* Badge */}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28, opacity: 0.18 }}>
         <img src={BADGE_URL} alt="" style={{ width: 60, height: 60 }} />
       </div>
