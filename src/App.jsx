@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL
 const CANS_PER_CASE = 12
@@ -13,20 +13,19 @@ const MOVEMENT_TYPES = {
   'Shrinkage': ['Damaged / Lost'],
 }
 
-// Site palette: cream bg, terracotta accent, dark espresso text
 const B = {
-  bg:        '#F5EFE4',   // site cream
-  surface:   '#EDE5D6',   // slightly darker cream for cards
-  border:    '#D4C4A8',   // warm tan border
-  accent:    '#C4501A',   // terracotta / solzi orange-red
-  accentDk:  '#9C3D12',   // darker terracotta for hover
-  accentLt:  '#E8714A',   // lighter terracotta
-  text:      '#1E1008',   // dark espresso
-  textMid:   '#5C3D22',   // mid brown
-  textMuted: '#9C7B58',   // muted warm brown
-  green:     '#2D5A27',   // SOLZI green
-  greenLt:   '#EAF0E8',   // light green bg
-  white:     '#FFFDF8',   // off white
+  bg:        '#F5EFE4',
+  surface:   '#EDE5D6',
+  border:    '#D4C4A8',
+  accent:    '#C4501A',
+  accentDk:  '#9C3D12',
+  accentLt:  '#E8714A',
+  text:      '#1E1008',
+  textMid:   '#5C3D22',
+  textMuted: '#9C7B58',
+  green:     '#2D5A27',
+  greenLt:   '#EAF0E8',
+  white:     '#FFFDF8',
 }
 
 const s = {
@@ -80,6 +79,65 @@ const s = {
     cursor: 'pointer',
     transition: 'all 0.15s',
   }),
+  // Inventory panel
+  invPanel: {
+    margin: '14px 20px 0',
+    background: B.white,
+    borderRadius: 12,
+    border: `1px solid ${B.border}`,
+    overflow: 'hidden',
+  },
+  invHeader: {
+    padding: '8px 14px',
+    background: B.surface,
+    borderBottom: `1px solid ${B.border}`,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  invHeaderLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: '0.15em',
+    textTransform: 'uppercase',
+    color: B.textMid,
+  },
+  invRefresh: {
+    fontSize: 11,
+    color: B.textMuted,
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    fontFamily: 'inherit',
+  },
+  invGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: 0,
+  },
+  invCell: (last) => ({
+    padding: '10px 14px',
+    borderRight: last ? 'none' : `1px solid ${B.border}`,
+  }),
+  invCellLabel: {
+    fontSize: 10,
+    color: B.textMuted,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  invCellValue: (isTotal) => ({
+    fontSize: isTotal ? 20 : 18,
+    fontWeight: 700,
+    color: isTotal ? B.accent : B.text,
+    lineHeight: 1,
+  }),
+  invCellUnit: {
+    fontSize: 10,
+    color: B.textMuted,
+    marginTop: 1,
+  },
   section: {
     padding: '18px 20px 0',
   },
@@ -161,34 +219,6 @@ const s = {
     flexWrap: 'nowrap',
     overflowX: 'auto',
   },
-  // CYLINDER shape for cans
-  canBtn: (active) => ({
-    width: 42,
-    height: 42,
-    borderRadius: '50%',
-    border: `2px solid ${active ? B.accent : B.border}`,
-    background: active ? B.accent : B.bg,
-    color: active ? B.white : B.textMid,
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: 'pointer',
-    textAlign: 'center',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    transition: 'all 0.15s',
-    position: 'relative',
-  }),
-  canBtnInner: (active) => ({
-    width: 42,
-    flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 0,
-    cursor: 'pointer',
-  }),
   canCylTop: (active) => ({
     width: 32,
     height: 8,
@@ -217,7 +247,6 @@ const s = {
     background: active ? B.accentDk : B.border,
     border: `2px solid ${active ? B.accentDk : B.border}`,
   }),
-  // SQUARE shape for cases
   caseBtn: (active) => ({
     width: 42,
     height: 42,
@@ -350,6 +379,58 @@ function CylinderCustom({ value, onChange }) {
   )
 }
 
+function InventoryPanel() {
+  const [inv, setInv] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  async function fetchInv() {
+    setLoading(true)
+    try {
+      const res = await fetch(SCRIPT_URL)
+      const data = await res.json()
+      if (data.status === 'ok') {
+        setInv({
+          airdrome: Math.round(data.airdrome),
+          tpl: Math.round(data.tpl),
+          total: Math.round(data.total),
+        })
+      }
+    } catch {
+      setInv(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchInv() }, [])
+
+  const cells = [
+    { label: 'Airdrome', value: inv?.airdrome },
+    { label: '3PL', value: inv?.tpl },
+    { label: 'Total', value: inv?.total, isTotal: true },
+  ]
+
+  return (
+    <div style={s.invPanel}>
+      <div style={s.invHeader}>
+        <span style={s.invHeaderLabel}>Inventory</span>
+        <button style={s.invRefresh} onClick={fetchInv}>↻ refresh</button>
+      </div>
+      <div style={s.invGrid}>
+        {cells.map((c, i) => (
+          <div key={c.label} style={s.invCell(i === cells.length - 1)}>
+            <div style={s.invCellLabel}>{c.label}</div>
+            <div style={s.invCellValue(c.isTotal)}>
+              {loading ? '—' : inv ? c.value.toLocaleString() : '—'}
+            </div>
+            <div style={s.invCellUnit}>cases</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [user, setUser] = useState('David')
   const [movementType, setMovementType] = useState(null)
@@ -427,7 +508,10 @@ export default function App() {
         </div>
       </div>
 
-      {/* Movement Types — all visible, categories as headers */}
+      {/* Inventory Panel */}
+      <InventoryPanel />
+
+      {/* Movement Types */}
       <div style={s.section}>
         <p style={s.sectionLabel}>Movement Type</p>
         {Object.entries(MOVEMENT_TYPES).map(([cat, types]) => (
@@ -451,8 +535,6 @@ export default function App() {
       {/* Quantity */}
       <div style={s.qtySection}>
         <p style={s.sectionLabel}>Quantity</p>
-
-        {/* Cases — squares */}
         <div style={s.qtyBlock}>
           <div style={s.qtyBlockHeader}>
             <span style={{ fontSize: 16 }}>📦</span>
@@ -477,7 +559,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Cans — cylinders */}
         <div style={s.qtyBlock}>
           <div style={s.qtyBlockHeader}>
             <span style={{ fontSize: 16 }}>🥤</span>
@@ -499,7 +580,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Total */}
         {totalCans > 0 && (
           <div style={s.totalPill}>
             ✓ {totalCans} cans total
@@ -536,7 +616,6 @@ export default function App() {
         <img src={BADGE_URL} alt="" style={{ width: 60, height: 60 }} />
       </div>
 
-      {/* Toast */}
       {toast && <div style={s.toast(toast.type)}>{toast.msg}</div>}
     </div>
   )
