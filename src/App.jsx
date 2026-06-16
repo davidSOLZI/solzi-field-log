@@ -218,7 +218,7 @@ function InventoryCountTab() {
       <div style={{ background:DARK, borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
           <span style={{ color:GOLD, fontSize:13 }}>Counted cases</span>
-          <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>{totalCasesVal()}</span>
+          <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>{totalCasesVal().toFixed(2)}</span>
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
           <span style={{ color:GOLD, fontSize:13 }}>Counted cans</span>
@@ -322,7 +322,7 @@ function DashboardTab({ refreshKey }) {
         </div>
       </div>
 
-      <div style={lbl}>This Week (Field Log)</div>
+      <div style={lbl}>This Week</div>
       <div style={{ ...crd, padding:"12px 16px", display:"flex", gap:16, marginBottom:16 }}>
         <div style={{ flex:1, textAlign:"center" }}>
           <div style={{ fontSize:10, color:"#8B7355", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Cans</div>
@@ -368,7 +368,7 @@ export default function App() {
     <div style={{ minHeight:"100vh", background:CREAM, fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:TERRA, boxShadow:"0 2px 12px rgba(0,0,0,.18)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 16px 2px" }}>
-          <img src="https://drinksolzi.com/cdn/shop/files/SOLZI_Secondary_Logo_Terracotta.png" alt="SOLZI" style={{ height:26,width:26,objectFit:"contain",filter:"brightness(10)" }} onError={e=>{e.target.style.display="none";}} />
+          <img src="https://drinksolzi.com/cdn/shop/files/SOLZI_Secondary_Logo_Terracotta.png" alt="" crossOrigin="anonymous" style={{ height:26,width:26,objectFit:"contain",filter:"brightness(10)" }} onError={e=>{e.target.style.display="none";}} />
           <span style={{ color:"#fff", fontWeight:800, fontSize:17, letterSpacing:2.5 }}>SOLZI</span>
         </div>
         <div style={{ display:"flex" }}>
