@@ -1,583 +1,715 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from "react";
 
-const SCRIPT = 'https://script.google.com/macros/s/AKfycbzYaSp7AMpD0S2YOahtIjznWQLU0wXJm66IgiHtZpz985nzoPg9RE3TAakoruIosY9z/exec'
-const CPX = 12 // cans per case
+const CREAM = "#F5EFE4";
+const TERRA = "#C4501A";
+const DARK = "#2C1A0E";
+const CARD = "#FDF8F2";
+const BORDER = "#E8DDD0";
+const BADGE_URL = "https://drinksolzi.com/cdn/shop/files/SOLZI_Secondary_Logo_Terracotta.png";
+const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
-const C = {
-  cream:    '#F5EFE4',
-  surf:     '#EDE5D6',
-  surf2:    '#E0D4C0',
-  bdr:      '#D4C4A8',
-  bdrMid:   '#BEA98C',
-  org:      '#C4501A',
-  orgDk:    '#9C3D12',
-  esp:      '#1E1008',
-  brn:      '#5C3D22',
-  brnMid:   '#7A5235',
-  brnMt:    '#9C7B58',
-  hdr:      '#851714',
-  hdrDk:    '#6e1110',
-  grn:      '#2D5A27',
-  grnBg:    '#EAF0E8',
-  amb:      '#7A5200',
-  ambBg:    '#FFF3CD',
-  red:      '#851714',
-  redBg:    '#FDEAEA',
+// Movement categories — display label, spreadsheet value, items
+const MOVEMENT_CATEGORIES = [
+  {
+    category: "Sampling",
+    sheetCategory: "Marketing",
+    items: ["Retail MAC", "Events", "Retail Pop-Up"],
+  },
+  {
+    category: "Marketing",
+    sheetCategory: "Marketing",
+    items: ["Influencer Gifting", "Strategic Seeding", "UGC / Content", "Photoshoot", "Founder Use"],
+  },
+  {
+    category: "Retail",
+    sheetCategory: "Retail",
+    items: ["First Case Free", "Retail Order"],
+  },
+  {
+    category: "Customer",
+    sheetCategory: "Customer",
+    items: ["Offices", "Manual DTC Order"],
+  },
+  {
+    category: "Shrinkage",
+    sheetCategory: "Shrinkage",
+    items: ["Damaged / Lost", "Adjustment"],
+  },
+];
+
+function getSheetCategory(movementType) {
+  for (const cat of MOVEMENT_CATEGORIES) {
+    if (cat.items.includes(movementType)) return cat.sheetCategory;
+  }
+  return "Marketing";
 }
 
-const TYPES = {
-  Marketing: [
-    'Sampling - Events', 'Sampling - Popups', 'Sampling - Retail MAC',
-    'Strategic Seeding', 'Influencer Gifting', 'UGC / Content',
-    'Photoshoot', 'Founder Use',
-  ],
-  Retail:    ['First Case Free', 'Retail Order'],
-  Customer:  ['DTC Order', 'Offices', 'Paid Placement'],
-  Shrinkage: ['Damaged / Lost'],
-}
-
-const LOCS = [
-  { k: 'pallets',        l: 'Full pallets'   },
-  { k: 'garage_other',   l: 'Garage other'   },
-  { k: 'garage_fridge',  l: 'Garage fridge'  },
-  { k: 'outdoor_fridge', l: 'Outdoor fridge' },
-  { k: 'airdrome',       l: 'Airdrome'       },
-  { k: 'david_car',      l: "David's car"    },
-  { k: 'sophy_car',      l: "Sophy's car"    },
-]
-
-const QS = [1, 2, 4, 6, 12, 24]
-
-// ── Shared primitives ─────────────────────────────────────────────────────────
-
-function SecHead({ children, mt = 20 }) {
+// ── Stepper component ──────────────────────────────────────────────────────
+function Stepper({ label, value, onChange }) {
   return (
-    <div style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
-      color: C.brnMt, borderBottom: `1px solid ${C.bdr}`,
-      paddingBottom: 8, marginTop: mt, marginBottom: 12,
-    }}>{children}</div>
-  )
-}
-
-function Card({ children, highlight }) {
-  return (
-    <div style={{
-      background: C.surf, borderRadius: 12, padding: '12px 14px',
-      border: highlight ? `1.5px solid ${C.org}` : 'none',
-    }}>{children}</div>
-  )
-}
-
-function MetricCard({ label, value, sub, highlight }) {
-  return (
-    <Card highlight={highlight}>
-      <div style={{ fontSize: 11, color: C.brnMt, marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 21, fontWeight: 700, color: C.esp }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: C.brnMt, marginTop: 2 }}>{sub}</div>}
-    </Card>
-  )
-}
-
-function PrimaryBtn({ onClick, disabled, children }) {
-  return (
-    <button onClick={onClick} disabled={disabled} style={{
-      width: '100%', padding: 15, borderRadius: 12, border: 'none',
-      background: disabled ? C.brnMt : C.org,
-      color: '#fff', fontSize: 16, fontWeight: 700,
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      letterSpacing: '0.02em', marginTop: 16,
-    }}>{children}</button>
-  )
-}
-
-function Toast({ msg, type }) {
-  if (!msg) return null
-  return (
-    <div style={{
-      background: type === 'ok' ? C.grnBg : C.redBg,
-      color: type === 'ok' ? C.grn : C.red,
-      borderRadius: 10, padding: '11px 14px',
-      fontSize: 14, textAlign: 'center', marginTop: 10,
-    }}>{msg}</div>
-  )
-}
-
-// ── Header ────────────────────────────────────────────────────────────────────
-
-function Header({ user, onUser }) {
-  return (
-    <div style={{
-      position: 'sticky', top: 0, zIndex: 100,
-      background: C.hdr,
-      padding: 'env(safe-area-inset-top, 44px) 16px 10px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <img
-          src="/apple-touch-icon.png"
-          onError={e => {
-            e.target.onerror = null
-            e.target.src = 'https://drinksolzi.com/cdn/shop/files/solzi-badge-logo_-seek-the-unexpected-solar-burst-rgb.svg?v=1770842938'
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#8B7355", textTransform: "uppercase" }}>
+        {label}
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+        <button
+          onClick={() => onChange(Math.max(0, value - 1))}
+          style={{
+            width: 36, height: 36, borderRadius: "8px 0 0 8px",
+            border: `1px solid ${BORDER}`, background: CARD,
+            fontSize: 18, color: TERRA, cursor: "pointer", fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}
-          alt="SOLZI"
-          style={{ width: 36, height: 36, borderRadius: 7, objectFit: 'cover', background: 'rgba(255,255,255,0.1)' }}
+        >−</button>
+        <input
+          type="number"
+          min="0"
+          value={value}
+          onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0))}
+          style={{
+            width: 52, height: 36, textAlign: "center",
+            border: `1px solid ${BORDER}`, borderLeft: "none", borderRight: "none",
+            background: "#fff", fontSize: 16, fontWeight: 700, color: DARK,
+            outline: "none",
+          }}
         />
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '0.06em', color: '#fff' }}>SOLZI</div>
-          <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 1 }}>
-            Inventory Tracker
-          </div>
-        </div>
+        <button
+          onClick={() => onChange(value + 1)}
+          style={{
+            width: 36, height: 36, borderRadius: "0 8px 8px 0",
+            border: `1px solid ${BORDER}`, background: CARD,
+            fontSize: 18, color: TERRA, cursor: "pointer", fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >+</button>
       </div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {['David', 'Sophy'].map(u => (
-          <button key={u} onClick={() => onUser(u)} style={{
-            padding: '5px 13px', borderRadius: 20,
-            border: `1.5px solid ${u === user ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)'}`,
-            background: u === user ? 'rgba(255,255,255,0.18)' : 'transparent',
-            color: u === user ? '#fff' : 'rgba(255,255,255,0.65)',
-            fontSize: 13, fontWeight: u === user ? 600 : 400, cursor: 'pointer',
-          }}>{u}</button>
+    </div>
+  );
+}
+
+// ── Field Log Tab ──────────────────────────────────────────────────────────
+function FieldLogTab({ onSubmitSuccess }) {
+  const [movementType, setMovementType] = useState("");
+  const [cases, setCases] = useState(0);
+  const [looseCans, setLooseCans] = useState(0);
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [toast, setToast] = useState(null);
+
+  const totalCans = cases * 12 + looseCans;
+  const ready = movementType && totalCans > 0;
+
+  function showToast(msg, type) {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  async function handleSubmit() {
+    if (!ready) return;
+    setStatus("loading");
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+    const payload = {
+      action: "fieldLog",
+      date: dateStr,
+      time: timeStr,
+      movementType,
+      sheetCategory: getSheetCategory(movementType),
+      cases,
+      cans: looseCans,
+      totalCans,
+      notes,
+    };
+
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setStatus("success");
+      showToast(`✓ Logged ${totalCans} cans — ${movementType}`, "success");
+      // Reset
+      setMovementType("");
+      setCases(0);
+      setLooseCans(0);
+      setNotes("");
+      setTimeout(() => {
+        setStatus("idle");
+        onSubmitSuccess && onSubmitSuccess();
+      }, 2000);
+    } catch {
+      setStatus("error");
+      showToast("Failed to log. Check connection.", "error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  }
+
+  return (
+    <div style={{ padding: "16px 16px 100px" }}>
+      {/* Movement Type */}
+      <SectionHeader>Movement Type</SectionHeader>
+      <div style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: "hidden", marginBottom: 16 }}>
+        {MOVEMENT_CATEGORIES.map((cat, ci) => (
+          <div key={cat.category}>
+            <div style={{
+              padding: "8px 14px 4px",
+              fontSize: 11, fontWeight: 700, letterSpacing: 1,
+              color: "#8B7355", textTransform: "uppercase",
+              borderTop: ci > 0 ? `1px solid ${BORDER}` : "none",
+            }}>
+              {cat.category}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "4px 10px 10px" }}>
+              {cat.items.map(item => (
+                <button
+                  key={item}
+                  onClick={() => setMovementType(item)}
+                  style={{
+                    padding: "10px 6px",
+                    borderRadius: 8,
+                    border: movementType === item ? `2px solid ${TERRA}` : `1px solid ${BORDER}`,
+                    background: movementType === item ? "#FDE8DE" : "#fff",
+                    color: movementType === item ? TERRA : DARK,
+                    fontWeight: movementType === item ? 700 : 400,
+                    fontSize: 13,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    gridColumn: cat.items.length % 2 !== 0 && item === cat.items[cat.items.length - 1] ? "1 / -1" : undefined,
+                  }}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
+
+      {/* Quantity */}
+      <SectionHeader>Quantity</SectionHeader>
+      <div style={{
+        background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`,
+        padding: "16px 12px", marginBottom: 16,
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", gap: 12 }}>
+          <Stepper label="Cases (×12)" value={cases} onChange={setCases} />
+          <div style={{ width: 1, height: 50, background: BORDER }} />
+          <Stepper label="Loose Cans" value={looseCans} onChange={setLooseCans} />
+        </div>
+        <div style={{
+          marginTop: 14,
+          background: totalCans > 0 ? DARK : "#E8DDD0",
+          borderRadius: 8, padding: "10px 16px",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}>
+          <span style={{ color: totalCans > 0 ? "#C4916A" : "#8B7355", fontSize: 13, fontWeight: 600 }}>Total cans</span>
+          <span style={{ color: totalCans > 0 ? "#fff" : "#8B7355", fontSize: 22, fontWeight: 800 }}>{totalCans}</span>
+        </div>
+      </div>
+
+      {/* Notes */}
+      <SectionHeader>Notes (Optional)</SectionHeader>
+      <textarea
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        placeholder="e.g. Venice pop-up..."
+        rows={2}
+        style={{
+          width: "100%", boxSizing: "border-box",
+          borderRadius: 10, border: `1px solid ${BORDER}`,
+          padding: "10px 14px", fontSize: 14, color: DARK,
+          background: CARD, resize: "none", outline: "none",
+          fontFamily: "inherit", marginBottom: 20,
+        }}
+      />
+
+      {/* Submit */}
+      <button
+        onClick={handleSubmit}
+        disabled={!ready || status === "loading"}
+        style={{
+          width: "100%", padding: "14px",
+          borderRadius: 12, border: "none",
+          background: status === "success" ? "#2E7D32" : ready ? TERRA : "#C8B8A2",
+          color: "#fff", fontSize: 16, fontWeight: 700,
+          cursor: ready ? "pointer" : "default",
+          transition: "background 0.3s",
+        }}
+      >
+        {status === "loading" ? "Logging…" : status === "success" ? "✓ Logged!" : `Log ${totalCans > 0 ? totalCans + " cans" : "entry"}${movementType ? " — " + movementType : ""}`}
+      </button>
+
+      {toast && (
+        <div style={{
+          position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)",
+          background: toast.type === "success" ? "#2E7D32" : "#B71C1C",
+          color: "#fff", borderRadius: 10, padding: "10px 20px",
+          fontSize: 14, fontWeight: 600, zIndex: 999,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+          whiteSpace: "nowrap",
+        }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
-// ── Tab bar ───────────────────────────────────────────────────────────────────
+// ── Inventory Count Tab ────────────────────────────────────────────────────
+const FIXED_LOCATIONS = [
+  "Full pallets", "Garage — other", "Garage fridge",
+  "Outdoor fridge", "Airdrome", "David's car", "Sophy's car",
+];
 
-function TabBar({ tab, onTab }) {
-  return (
-    <div style={{
-      position: 'sticky', top: 73, zIndex: 99,
-      background: C.hdrDk, display: 'flex',
-    }}>
-      {[['field', 'Field Log'], ['count', 'Inventory Count'], ['dash', 'Dashboard']].map(([id, label]) => (
-        <button key={id} onClick={() => onTab(id)} style={{
-          flex: 1, padding: '10px 4px 9px', background: 'transparent', border: 'none',
-          color: tab === id ? '#fff' : 'rgba(255,255,255,0.5)',
-          fontSize: 12, fontWeight: 500, letterSpacing: '0.04em', cursor: 'pointer',
-          borderBottom: tab === id ? '2.5px solid #fff' : '2.5px solid transparent',
-        }}>{label}</button>
-      ))}
-    </div>
-  )
-}
+function InventoryCountTab() {
+  const [locations, setLocations] = useState(
+    Object.fromEntries(FIXED_LOCATIONS.map(l => [l, { cases: "", cans: "" }]))
+  );
+  const [extraLocations, setExtraLocations] = useState([]);
+  const [newLocName, setNewLocName] = useState("");
+  const [notes, setNotes] = useState("");
+  const [ledgerExpected, setLedgerExpected] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [toast, setToast] = useState(null);
 
-// ── Field Log ─────────────────────────────────────────────────────────────────
-
-function FieldLogTab({ user }) {
-  const [movType, setMovType] = useState(null)
-  const [qty, setQty] = useState(null)
-  const [customQty, setCustomQty] = useState('')
-  const [notes, setNotes] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState(null)
-
-  function showToast(type, msg) {
-    setToast({ type, msg })
-    setTimeout(() => setToast(null), 4500)
+  function allLocations() {
+    const all = {};
+    FIXED_LOCATIONS.forEach(l => { all[l] = locations[l]; });
+    extraLocations.forEach(l => { all[l.name] = l; });
+    return all;
   }
 
-  function reset() {
-    setMovType(null); setQty(null); setCustomQty(''); setNotes('')
+  function totalCans() {
+    let t = 0;
+    FIXED_LOCATIONS.forEach(l => {
+      t += (parseFloat(locations[l].cases) || 0) * 12 + (parseInt(locations[l].cans) || 0);
+    });
+    extraLocations.forEach(l => {
+      t += (parseFloat(l.cases) || 0) * 12 + (parseInt(l.cans) || 0);
+    });
+    return t;
   }
 
-  async function submit() {
-    if (!movType) { showToast('err', 'Select a movement type'); return }
-    const q = qty || parseInt(customQty)
-    if (!q || q < 1) { showToast('err', 'Enter a quantity'); return }
-    setLoading(true)
+  function totalCasesFloat() {
+    return totalCans() / 12;
+  }
+
+  const variance = ledgerExpected !== "" ? totalCans() - parseInt(ledgerExpected) : null;
+
+  function updateFixed(loc, field, val) {
+    setLocations(prev => ({ ...prev, [loc]: { ...prev[loc], [field]: val } }));
+  }
+
+  function updateExtra(idx, field, val) {
+    setExtraLocations(prev => prev.map((l, i) => i === idx ? { ...l, [field]: val } : l));
+  }
+
+  function addLocation() {
+    const name = newLocName.trim();
+    if (!name) return;
+    setExtraLocations(prev => [...prev, { name, cases: "", cans: "" }]);
+    setNewLocName("");
+  }
+
+  function showToast(msg, type) {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  async function handleSubmit() {
+    setStatus("loading");
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const weekOf = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+
+    const payload = {
+      action: "inventoryCount",
+      date: dateStr,
+      time: timeStr,
+      weekOf,
+      totalCases: totalCasesFloat().toFixed(2),
+      totalLooseCans: 0,
+      totalCans: totalCans(),
+      ledgerExpected: ledgerExpected || "",
+      variance: variance !== null ? variance : "",
+      locations: JSON.stringify(allLocations()),
+      notes,
+    };
+
     try {
-      const r = await fetch(SCRIPT, {
-        method: 'POST', redirect: 'follow',
-        body: JSON.stringify({ action: 'log_entry', submitter: user, movementType: movType, cans: q, notes }),
-      })
-      const d = await r.json()
-      if (d.status === 'ok') { showToast('ok', `✓ ${q} cans logged — ${movType}`); reset() }
-      else showToast('err', 'Error: ' + (d.message || 'unknown'))
-    } catch { showToast('err', 'Network error. Try again.') }
-    finally { setLoading(false) }
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setStatus("success");
+      showToast("✓ Count submitted!", "success");
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch {
+      setStatus("error");
+      showToast("Failed to submit.", "error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  }
+
+  function LocationRow({ label, data, onUpdate }) {
+    const rowCans = (parseFloat(data.cases) || 0) * 12 + (parseInt(data.cans) || 0);
+    return (
+      <div style={{
+        display: "grid", gridTemplateColumns: "1fr 90px 90px 60px",
+        gap: 8, alignItems: "center",
+        padding: "10px 0", borderBottom: `1px solid ${BORDER}`,
+      }}>
+        <span style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>{label}</span>
+        <input
+          type="number" min="0" step="0.5"
+          placeholder="Cases"
+          value={data.cases}
+          onChange={e => onUpdate("cases", e.target.value)}
+          style={inputStyle}
+        />
+        <input
+          type="number" min="0"
+          placeholder="Cans"
+          value={data.cans}
+          onChange={e => onUpdate("cans", e.target.value)}
+          style={inputStyle}
+        />
+        <span style={{ fontSize: 13, color: "#8B7355", textAlign: "right", fontWeight: 600 }}>
+          {rowCans > 0 ? rowCans : "—"}
+        </span>
+      </div>
+    );
   }
 
   const inputStyle = {
-    border: `1.5px solid ${C.bdr}`, borderRadius: 10,
-    background: C.surf, color: C.esp,
-    fontSize: 16, fontFamily: 'inherit',
-  }
+    padding: "7px 8px", borderRadius: 7, border: `1px solid ${BORDER}`,
+    background: "#fff", fontSize: 14, color: DARK, outline: "none",
+    width: "100%", boxSizing: "border-box",
+  };
 
   return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <SecHead mt={0}>Movement type</SecHead>
-
-      {Object.entries(TYPES).map(([cat, types]) => (
-        <div key={cat}>
-          <div style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: C.brnMt, margin: '14px 0 8px',
-          }}>{cat}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-            {types.map(t => (
-              <button key={t} onClick={() => setMovType(t)} style={{
-                padding: '8px 13px', borderRadius: 20,
-                border: `1.5px solid ${movType === t ? C.org : C.bdr}`,
-                background: movType === t ? C.org : C.surf,
-                color: movType === t ? '#fff' : C.brn,
-                fontSize: 13, fontWeight: movType === t ? 600 : 400,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-              }}>{t}</button>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <SecHead mt={22}>Quantity (cans)</SecHead>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
-        {QS.map(q => (
-          <button key={q} onClick={() => { setQty(q); setCustomQty('') }} style={{
-            width: 46, height: 46, borderRadius: 10,
-            border: `1.5px solid ${qty === q ? C.org : C.bdr}`,
-            background: qty === q ? C.org : C.surf,
-            color: qty === q ? '#fff' : C.brn,
-            fontSize: 16, fontWeight: 500, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>{q}</button>
-        ))}
-        <input
-          type="number" min="1" placeholder="custom" value={customQty}
-          onChange={e => { setCustomQty(e.target.value); setQty(null) }}
-          style={{ ...inputStyle, flex: 1, minWidth: 80, height: 46, textAlign: 'center', padding: '0 10px' }}
-        />
-      </div>
-
-      <SecHead mt={22}>Notes (optional)</SecHead>
-      <textarea
-        placeholder="Location, person, event name…"
-        value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-        style={{ ...inputStyle, width: '100%', padding: '11px 13px', resize: 'none', minHeight: 72 }}
-      />
-
-      <PrimaryBtn onClick={submit} disabled={loading}>
-        {loading ? 'Logging…' : 'Log Entry'}
-      </PrimaryBtn>
-      {toast && <Toast msg={toast.msg} type={toast.type} />}
-    </div>
-  )
-}
-
-// ── Inventory Count ───────────────────────────────────────────────────────────
-
-function InventoryCountTab() {
-  const initLocs = Object.fromEntries(LOCS.map(l => [l.k, { cases: 0, cans: 0 }]))
-  const [locs, setLocs] = useState(initLocs)
-  const [ledger, setLedger] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState(null)
-
-  useEffect(() => {
-    fetch(SCRIPT + '?action=inventory_ledger', { redirect: 'follow' })
-      .then(r => r.json())
-      .then(d => { if (d.airdromeCases !== undefined) setLedger(d.airdromeCases) })
-      .catch(() => {})
-  }, [])
-
-  function showToast(type, msg) {
-    setToast({ type, msg }); setTimeout(() => setToast(null), 4500)
-  }
-
-  function setLoc(key, field, val) {
-    setLocs(prev => ({ ...prev, [key]: { ...prev[key], [field]: parseFloat(val) || 0 } }))
-  }
-
-  // Derived
-  const locTotals = Object.fromEntries(LOCS.map(l => [l.k, locs[l.k].cases * CPX + locs[l.k].cans]))
-  const totalCans  = Object.values(locTotals).reduce((s, v) => s + v, 0)
-  const obsRound   = Math.round(totalCans / CPX * 100) / 100
-
-  // Gap
-  const gap      = ledger !== null ? totalCans / CPX - ledger : null
-  const gapRound = gap !== null ? Math.round(gap * 100) / 100 : null
-  const gapCans  = gap !== null ? Math.round(gap * CPX) : null
-  const absGap   = gapRound !== null ? Math.abs(gapRound) : null
-
-  let gapColor, gapBg, gapLabel
-  if (absGap === null) {
-    gapColor = C.brnMt; gapBg = C.surf; gapLabel = '—'
-  } else if (absGap <= 1) {
-    gapColor = C.grn; gapBg = C.grnBg; gapLabel = '✓ Within tolerance'
-  } else if (absGap <= 2) {
-    gapColor = C.amb; gapBg = C.ambBg; gapLabel = '⚠ Minor variance'
-  } else {
-    gapColor = C.red; gapBg = C.redBg; gapLabel = '✕ Significant variance — recount'
-  }
-
-  async function saveCount() {
-    const locsPayload = LOCS.map(l => ({ name: l.l, cases: locs[l.k].cases, cans: locs[l.k].cans }))
-    const shrinkage   = ledger !== null ? Math.round((obsRound - ledger) * 100) / 100 : null
-    setLoading(true)
-    try {
-      const r = await fetch(SCRIPT, {
-        method: 'POST', redirect: 'follow',
-        body: JSON.stringify({
-          action: 'inventory_count', locations: locsPayload,
-          totalCans: Math.round(totalCans), ledgerCases: ledger,
-          observedCases: obsRound, shrinkage,
-        }),
-      })
-      const d = await r.json()
-      if (d.status === 'ok') showToast('ok', '✓ Count saved to sheet')
-      else showToast('err', 'Error: ' + (d.message || 'unknown'))
-    } catch { showToast('err', 'Network error. Try again.') }
-    finally { setLoading(false) }
-  }
-
-  const numInput = (key, field) => ({
-    type: 'number', min: 0, inputMode: 'numeric',
-    value: locs[key][field] === 0 ? '' : locs[key][field],
-    placeholder: '0',
-    onChange: e => setLoc(key, field, e.target.value),
-    style: {
-      width: '100%', textAlign: 'right',
-      border: `1.5px solid ${C.bdr}`, borderRadius: 8,
-      padding: '7px 8px', background: C.surf,
-      color: C.esp, fontSize: 15, fontFamily: 'inherit',
-    },
-  })
-
-  return (
-    <div style={{ padding: '16px 16px 32px' }}>
-      <SecHead mt={0}>Location counts</SecHead>
+    <div style={{ padding: "16px 16px 100px" }}>
+      <SectionHeader>Weekly Count</SectionHeader>
 
       {/* Column headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 54px', gap: '0 6px', paddingBottom: 8 }}>
-        {['Location', 'Cases', '+ Cans', 'Total'].map((h, i) => (
-          <div key={h} style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.06em', color: C.brnMt,
-            textAlign: i === 0 ? 'left' : 'right',
-          }}>{h}</div>
-        ))}
-      </div>
-
-      {LOCS.map((loc, i) => (
-        <div key={loc.k} style={{
-          display: 'grid', gridTemplateColumns: '1fr 72px 72px 54px', gap: '0 6px',
-          borderTop: i === 0 ? `1px solid ${C.bdr}` : 'none',
-          borderBottom: `1px solid ${C.bdr}`, padding: '5px 0', alignItems: 'center',
-        }}>
-          <span style={{ fontSize: 14, color: C.brn, whiteSpace: 'nowrap' }}>{loc.l}</span>
-          <input {...numInput(loc.k, 'cases')} />
-          <input {...numInput(loc.k, 'cans')} />
-          <div style={{ textAlign: 'right', fontSize: 13, color: C.brnMt, padding: '0 4px' }}>
-            {Math.round(locTotals[loc.k])}
-          </div>
-        </div>
-      ))}
-
-      {/* Total bar */}
       <div style={{
-        background: C.org, color: '#fff', borderRadius: 12,
-        padding: '14px 16px', margin: '14px 0',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        display: "grid", gridTemplateColumns: "1fr 90px 90px 60px",
+        gap: 8, padding: "0 0 6px",
       }}>
-        <div>
-          <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)' }}>
-            Total on hand
-          </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
-            {Math.round(totalCans).toLocaleString()} cans
-          </div>
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 700 }}>{obsRound.toFixed(2)} cases</div>
+        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Location</span>
+        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Cases</span>
+        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Cans</span>
+        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, textAlign: "right" }}>Total</span>
       </div>
 
-      <SecHead>Vs. Airdrome ledger</SecHead>
-
-      {/* Compare cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 12 }}>
-        {[
-          ['Ledger',   ledger !== null ? ledger : '…',              'cases'],
-          ['Observed', obsRound.toFixed(2),                          'cases'],
-          ['Gap',      gapRound !== null ? (gap >= 0 ? '+' : '') + gapRound.toFixed(2) : '—',
-                       gapCans !== null ? (gapCans >= 0 ? '+' : '') + gapCans + ' cans' : 'cans'],
-        ].map(([lbl, val, sub], i) => (
-          <div key={lbl} style={{
-            background: i === 2 ? gapBg : C.surf,
-            borderRadius: 10, padding: '10px 12px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 10, color: C.brnMt, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{lbl}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: i === 2 ? gapColor : C.esp }}>{val}</div>
-            <div style={{ fontSize: 10, color: C.brnMt, marginTop: 2 }}>{sub}</div>
-          </div>
+      <div style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "0 14px", marginBottom: 16 }}>
+        {FIXED_LOCATIONS.map(loc => (
+          <LocationRow
+            key={loc}
+            label={loc}
+            data={locations[loc]}
+            onUpdate={(field, val) => updateFixed(loc, field, val)}
+          />
         ))}
+        {extraLocations.map((loc, i) => (
+          <LocationRow
+            key={loc.name}
+            label={loc.name}
+            data={loc}
+            onUpdate={(field, val) => updateExtra(i, field, val)}
+          />
+        ))}
+        {/* Add location row */}
+        <div style={{ display: "flex", gap: 8, padding: "10px 0" }}>
+          <input
+            type="text"
+            placeholder="+ Add location"
+            value={newLocName}
+            onChange={e => setNewLocName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addLocation()}
+            style={{ ...inputStyle, flex: 1 }}
+          />
+          <button onClick={addLocation} style={{
+            padding: "7px 14px", borderRadius: 7, border: `1px solid ${TERRA}`,
+            background: "transparent", color: TERRA, fontWeight: 700, fontSize: 13, cursor: "pointer",
+          }}>Add</button>
+        </div>
       </div>
 
-      {/* Gap status bar */}
-      {gap !== null && (
+      {/* Totals card */}
+      <div style={{ background: DARK, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{ color: "#C4916A", fontSize: 13 }}>Total cases</span>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{totalCasesFloat().toFixed(2)}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: ledgerExpected !== "" ? 10 : 0 }}>
+          <span style={{ color: "#C4916A", fontSize: 13 }}>Total cans</span>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{totalCans()}</span>
+        </div>
+        {ledgerExpected !== "" && variance !== null && (
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            borderTop: "1px solid #4a3020", paddingTop: 10,
+          }}>
+            <span style={{ color: "#C4916A", fontSize: 13 }}>Variance</span>
+            <span style={{
+              fontWeight: 700, fontSize: 16,
+              color: Math.abs(variance) <= 12 ? "#81C784" : Math.abs(variance) <= 24 ? "#FFD54F" : "#E57373",
+            }}>
+              {variance > 0 ? "+" : ""}{variance} cans
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Ledger expected */}
+      <SectionHeader>Ledger Expected (optional)</SectionHeader>
+      <input
+        type="number"
+        placeholder="e.g. 1440"
+        value={ledgerExpected}
+        onChange={e => setLedgerExpected(e.target.value)}
+        style={{ ...inputStyle, marginBottom: 16, display: "block", width: "100%", boxSizing: "border-box" }}
+      />
+
+      <SectionHeader>Notes (Optional)</SectionHeader>
+      <textarea
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        placeholder="Any notes about this count..."
+        rows={2}
+        style={{
+          width: "100%", boxSizing: "border-box",
+          borderRadius: 10, border: `1px solid ${BORDER}`,
+          padding: "10px 14px", fontSize: 14, color: DARK,
+          background: CARD, resize: "none", outline: "none",
+          fontFamily: "inherit", marginBottom: 20,
+        }}
+      />
+
+      <button
+        onClick={handleSubmit}
+        disabled={status === "loading" || totalCans() === 0}
+        style={{
+          width: "100%", padding: "14px",
+          borderRadius: 12, border: "none",
+          background: status === "success" ? "#2E7D32" : totalCans() > 0 ? TERRA : "#C8B8A2",
+          color: "#fff", fontSize: 16, fontWeight: 700,
+          cursor: totalCans() > 0 ? "pointer" : "default",
+        }}
+      >
+        {status === "loading" ? "Submitting…" : status === "success" ? "✓ Submitted!" : "Submit Count"}
+      </button>
+
+      {toast && (
         <div style={{
-          background: gapBg, borderRadius: 12, padding: '12px 16px', marginBottom: 4,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)",
+          background: toast.type === "success" ? "#2E7D32" : "#B71C1C",
+          color: "#fff", borderRadius: 10, padding: "10px 20px",
+          fontSize: 14, fontWeight: 600, zIndex: 999,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+          whiteSpace: "nowrap",
         }}>
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: gapColor }}>
-            {gapLabel}
-          </span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: gapColor }}>
-            {(gap >= 0 ? '+' : '') + gapRound.toFixed(2)} cases
-          </span>
+          {toast.msg}
         </div>
       )}
-
-      <PrimaryBtn onClick={saveCount} disabled={loading}>
-        {loading ? 'Saving…' : 'Save Count'}
-      </PrimaryBtn>
-      {toast && <Toast msg={toast.msg} type={toast.type} />}
     </div>
-  )
+  );
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
+// ── Dashboard Tab ──────────────────────────────────────────────────────────
+function DashboardTab({ refreshKey }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-function DashboardTab() {
-  const [data, setData]     = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [err, setErr]       = useState(false)
-
-  async function load() {
-    setLoading(true); setErr(false)
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(false);
     try {
-      const r = await fetch(SCRIPT + '?action=dashboard', { redirect: 'follow' })
-      setData(await r.json())
-    } catch { setErr(true) }
-    finally { setLoading(false) }
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=dashboard`);
+      const json = await res.json();
+      setData(json);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData, refreshKey]);
+
+  if (loading) return (
+    <div style={{ padding: 32, textAlign: "center", color: "#8B7355" }}>
+      Loading dashboard…
+    </div>
+  );
+
+  if (error || !data) return (
+    <div style={{ padding: 32, textAlign: "center" }}>
+      <div style={{ color: "#B71C1C", marginBottom: 12 }}>Couldn't load dashboard</div>
+      <button onClick={fetchData} style={{
+        padding: "8px 20px", borderRadius: 8, border: `1px solid ${TERRA}`,
+        background: "transparent", color: TERRA, fontWeight: 700, cursor: "pointer",
+      }}>Retry</button>
+    </div>
+  );
+
+  const { airdrome = 0, thirdParty = 0, totalOnHand = 0, weekCans = 0, recentEntries = [] } = data;
+
+  function StatCard({ label, value, accent }) {
+    return (
+      <div style={{
+        background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`,
+        padding: "14px 16px", flex: 1,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#8B7355", textTransform: "uppercase", marginBottom: 6 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: accent || DARK }}>
+          {Math.round(value)}
+        </div>
+      </div>
+    );
   }
 
-  useEffect(() => { load() }, [])
-
-  const inv    = data?.inventory    || {}
-  const usage  = data?.usage        || {}
-  const week   = data?.thisWeek     || {}
-  const recent = data?.recentEntries || []
-
-  const c   = parseFloat(usage.customer?.cases)  || 0
-  const r   = parseFloat(usage.retail?.cases)    || 0
-  const m   = parseFloat(usage.marketing?.cases) || 0
-  const tot = c + r + m
-  const pct = n => tot > 0 ? Math.round(n / tot * 100) + '%' : '—'
-
   return (
-    <div style={{ padding: '4px 16px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-        <button onClick={load} style={{
-          padding: '5px 11px', borderRadius: 8,
-          border: `1.5px solid ${C.bdr}`, background: 'transparent',
-          color: C.brnMt, fontSize: 12, cursor: 'pointer',
-        }}>↻ Refresh</button>
+    <div style={{ padding: "16px 16px 100px" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <StatCard label="Airdrome" value={airdrome} />
+        <StatCard label="3PL / Other" value={thirdParty} />
+        <StatCard label="Total" value={totalOnHand} accent={TERRA} />
       </div>
 
-      {loading && (
-        <div style={{ textAlign: 'center', padding: 48, color: C.brnMt }}>Loading…</div>
-      )}
-      {err && (
-        <div style={{ textAlign: 'center', padding: 24, color: C.red, fontSize: 13 }}>
-          Could not load data. Check connection and try refreshing.
-        </div>
-      )}
+      {/* This week */}
+      <SectionHeader>This Week</SectionHeader>
+      <div style={{
+        background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`,
+        padding: "14px 16px", marginBottom: 16,
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
+        <span style={{ fontSize: 14, color: "#8B7355" }}>Cans used</span>
+        <span style={{ fontSize: 22, fontWeight: 800, color: DARK }}>{Math.round(weekCans)}</span>
+      </div>
 
-      {!loading && !err && (
-        <>
-          {/* ── Total on hand ── */}
-          <SecHead mt={8}>Total on hand</SecHead>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 8 }}>
-            <MetricCard label="Airdrome" value={inv.airdrome ?? '—'} sub="cases" />
-            <MetricCard label="3PL"      value={inv.threepl  ?? '—'} sub="cases" />
-            <MetricCard
-              label="Total" value={inv.total ?? '—'}
-              sub={`cases · ${Math.round((inv.total || 0) * CPX).toLocaleString()} cans`}
-              highlight
-            />
-          </div>
-
-          {/* ── Usage to date ── */}
-          <SecHead>Usage to date</SecHead>
-          <Card>
-            {[['Customer', c, pct(c)], ['Retail', r, pct(r)], ['Marketing', m, pct(m)]].map(([lbl, n, p]) => (
-              <div key={lbl} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-                padding: '9px 0', borderBottom: `1px solid ${C.bdr}`, fontSize: 14,
-              }}>
-                <span style={{ color: C.brn }}>{lbl}</span>
-                <span style={{ fontWeight: 500, color: C.esp }}>
-                  {n} cases{' '}
-                  <span style={{ fontSize: 11, color: C.brnMt, fontWeight: 400 }}>{p}</span>
-                </span>
-              </div>
-            ))}
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-              padding: '10px 0 2px', fontSize: 14, fontWeight: 700,
-              borderTop: `1px solid ${C.bdrMid}`, marginTop: 4,
-            }}>
-              <span style={{ color: C.brn }}>Total outbound</span>
-              <span style={{ color: C.esp }}>{tot} cases</span>
+      {/* Recent entries */}
+      <SectionHeader>Recent Entries</SectionHeader>
+      <div style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        {recentEntries.length === 0 ? (
+          <div style={{ padding: 20, color: "#8B7355", fontSize: 14, textAlign: "center" }}>No entries yet</div>
+        ) : recentEntries.map((entry, i) => (
+          <div key={i} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "11px 14px",
+            borderBottom: i < recentEntries.length - 1 ? `1px solid ${BORDER}` : "none",
+          }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{entry.movementType}</div>
+              <div style={{ fontSize: 11, color: "#8B7355", marginTop: 2 }}>{entry.date}</div>
             </div>
-          </Card>
-
-          {/* ── This week ── */}
-          <SecHead>This week</SecHead>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <MetricCard label="Cans out"  value={Math.round(week.cans  || 0).toLocaleString()} sub="this week" />
-            <MetricCard label="Cases out" value={(week.cases || 0).toFixed(1)}                  sub="this week" />
+            <div style={{
+              fontSize: 15, fontWeight: 800, color: TERRA,
+              background: "#FDE8DE", borderRadius: 8, padding: "4px 10px",
+            }}>
+              {Math.round(entry.totalCans)} cans
+            </div>
           </div>
+        ))}
+      </div>
 
-          {/* ── Recent entries ── */}
-          <SecHead>Recent entries</SecHead>
-          <Card>
-            {recent.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 16, color: C.brnMt, fontSize: 14 }}>No entries yet.</div>
-            )}
-            {recent.map((e, i) => (
-              <div key={i} style={{
-                display: 'grid', gridTemplateColumns: '44px 1fr 52px', gap: '0 10px',
-                padding: '8px 0',
-                borderBottom: i < recent.length - 1 ? `1px solid ${C.bdr}` : 'none',
-                alignItems: 'start',
-              }}>
-                <span style={{ fontSize: 12, color: C.brnMt, paddingTop: 2 }}>{e.date}</span>
-                <div>
-                  <div style={{ fontSize: 14, color: C.esp, lineHeight: 1.3 }}>{e.notes || '—'}</div>
-                  <div style={{ fontSize: 11, color: C.brnMt, marginTop: 2 }}>{e.movType}</div>
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.brn, textAlign: 'right', paddingTop: 2 }}>
-                  {Math.round(e.cans || 0)} cans
-                </span>
-              </div>
-            ))}
-          </Card>
-        </>
-      )}
+      <div style={{ textAlign: "right", marginTop: 10 }}>
+        <button onClick={fetchData} style={{
+          fontSize: 12, color: "#8B7355", background: "none", border: "none",
+          cursor: "pointer", textDecoration: "underline",
+        }}>Refresh</button>
+      </div>
     </div>
-  )
+  );
 }
 
-// ── App ───────────────────────────────────────────────────────────────────────
-
-export default function App() {
-  const [tab, setTab]   = useState('field')
-  const [user, setUser] = useState('David')
-
+// ── Shared section header ──────────────────────────────────────────────────
+function SectionHeader({ children }) {
   return (
     <div style={{
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      background: C.cream, color: C.esp,
-      minHeight: '100dvh',
-      paddingBottom: 'env(safe-area-inset-bottom, 24px)',
+      fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
+      color: "#8B7355", textTransform: "uppercase",
+      marginBottom: 8, paddingLeft: 2,
     }}>
-      <Header user={user} onUser={setUser} />
-      <TabBar tab={tab} onTab={setTab} />
-      {tab === 'field' && <FieldLogTab user={user} />}
-      {tab === 'count' && <InventoryCountTab />}
-      {tab === 'dash'  && <DashboardTab />}
+      {children}
     </div>
-  )
+  );
+}
+
+// ── App Shell ──────────────────────────────────────────────────────────────
+export default function App() {
+  const [tab, setTab] = useState("fieldlog");
+  const [dashRefreshKey, setDashRefreshKey] = useState(0);
+
+  function handleFieldLogSuccess() {
+    // Auto-refresh dashboard after a field log entry
+    setDashRefreshKey(k => k + 1);
+  }
+
+  const tabs = [
+    { id: "fieldlog", label: "Field Log" },
+    { id: "inventory", label: "Inventory Count" },
+    { id: "dashboard", label: "Dashboard" },
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", background: CREAM, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      {/* Fixed header */}
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        background: TERRA,
+        boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+      }}>
+        {/* Logo bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", gap: 10 }}>
+          <img src={BADGE_URL} alt="SOLZI" style={{ height: 28, width: 28, objectFit: "contain", filter: "brightness(10)" }} />
+          <span style={{ color: "#fff", fontWeight: 800, fontSize: 18, letterSpacing: 2 }}>SOLZI</span>
+        </div>
+        {/* Tab bar */}
+        <div style={{ display: "flex" }}>
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                flex: 1, padding: "8px 4px", border: "none",
+                background: tab === t.id ? "rgba(255,255,255,0.2)" : "transparent",
+                color: tab === t.id ? "#fff" : "rgba(255,255,255,0.65)",
+                fontWeight: tab === t.id ? 700 : 400,
+                fontSize: 12, cursor: "pointer",
+                borderBottom: tab === t.id ? "2px solid #fff" : "2px solid transparent",
+                transition: "all 0.15s",
+                letterSpacing: 0.3,
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content — offset by header height */}
+      <div style={{ paddingTop: 82 }}>
+        {tab === "fieldlog" && <FieldLogTab onSubmitSuccess={handleFieldLogSuccess} />}
+        {tab === "inventory" && <InventoryCountTab />}
+        {tab === "dashboard" && <DashboardTab refreshKey={dashRefreshKey} />}
+      </div>
+    </div>
+  );
 }
