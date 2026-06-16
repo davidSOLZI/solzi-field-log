@@ -5,81 +5,119 @@ const TERRA = "#C4501A";
 const DARK = "#2C1A0E";
 const CARD = "#FDF8F2";
 const BORDER = "#E8DDD0";
-const BADGE_URL = "https://drinksolzi.com/cdn/shop/files/SOLZI_Secondary_Logo_Terracotta.png";
+const GOLD = "#C4916A";
 const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
-// Movement categories — display label, spreadsheet value, items
-const MOVEMENT_CATEGORIES = [
+// ── Movement categories ────────────────────────────────────────────────────
+// Display category | sheet location | items
+const CATEGORIES = [
   {
-    category: "Sampling",
-    sheetCategory: "Marketing",
+    label: "Sampling",
+    sheetLocation: "Marketing",
     items: ["Retail MAC", "Events", "Retail Pop-Up"],
   },
   {
-    category: "Marketing",
-    sheetCategory: "Marketing",
+    label: "Marketing",
+    sheetLocation: "Marketing",
     items: ["Influencer Gifting", "Strategic Seeding", "UGC / Content", "Photoshoot", "Founder Use"],
   },
   {
-    category: "Retail",
-    sheetCategory: "Retail",
+    label: "Retail",
+    sheetLocation: "Retail",
     items: ["First Case Free", "Retail Order"],
   },
   {
-    category: "Customer",
-    sheetCategory: "Customer",
+    label: "Customer",
+    sheetLocation: "Customer",
     items: ["Offices", "Manual DTC Order"],
   },
   {
-    category: "Shrinkage",
-    sheetCategory: "Shrinkage",
+    label: "Shrinkage",
+    sheetLocation: "Loss",
     items: ["Damaged / Lost", "Adjustment"],
   },
 ];
 
-function getSheetCategory(movementType) {
-  for (const cat of MOVEMENT_CATEGORIES) {
-    if (cat.items.includes(movementType)) return cat.sheetCategory;
+function getSheetLocation(movementType) {
+  for (const cat of CATEGORIES) {
+    if (cat.items.includes(movementType)) return cat.sheetLocation;
   }
   return "Marketing";
 }
 
-// ── Stepper component ──────────────────────────────────────────────────────
+// ── Ledger column order (10 cols) ─────────────────────────────────────────
+// WEEK START | DATE | LOCATION FROM | LOCATION TO | MOVEMENT TYPE | CASES | CANS | TOTAL CANS | NOTES | SOURCE
+
+// ── Shared styles ─────────────────────────────────────────────────────────
+const s = {
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: 1.2,
+    color: "#8B7355",
+    textTransform: "uppercase",
+    marginBottom: 8,
+    paddingLeft: 2,
+  },
+  card: {
+    background: CARD,
+    borderRadius: 12,
+    border: `1px solid ${BORDER}`,
+    marginBottom: 16,
+  },
+  input: {
+    padding: "8px 10px",
+    borderRadius: 8,
+    border: `1px solid ${BORDER}`,
+    background: "#fff",
+    fontSize: 14,
+    color: DARK,
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
+};
+
+// ── Stepper ───────────────────────────────────────────────────────────────
 function Stepper({ label, value, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
       <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#8B7355", textTransform: "uppercase" }}>
         {label}
       </span>
-      <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
         <button
           onClick={() => onChange(Math.max(0, value - 1))}
           style={{
-            width: 36, height: 36, borderRadius: "8px 0 0 8px",
+            width: 36, height: 38, borderRadius: "8px 0 0 8px",
             border: `1px solid ${BORDER}`, background: CARD,
-            fontSize: 18, color: TERRA, cursor: "pointer", fontWeight: 700,
+            fontSize: 20, color: TERRA, cursor: "pointer", fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
+            lineHeight: 1,
           }}
         >−</button>
         <input
           type="number"
           min="0"
-          value={value}
+          value={value === 0 ? "" : value}
+          placeholder="0"
           onChange={e => onChange(Math.max(0, parseInt(e.target.value) || 0))}
           style={{
-            width: 52, height: 36, textAlign: "center",
+            width: 54, height: 38, textAlign: "center",
             border: `1px solid ${BORDER}`, borderLeft: "none", borderRight: "none",
-            background: "#fff", fontSize: 16, fontWeight: 700, color: DARK,
-            outline: "none",
+            background: "#fff", fontSize: 17, fontWeight: 700, color: DARK,
+            outline: "none", fontFamily: "inherit",
           }}
         />
         <button
           onClick={() => onChange(value + 1)}
           style={{
-            width: 36, height: 36, borderRadius: "0 8px 8px 0",
+            width: 36, height: 38, borderRadius: "0 8px 8px 0",
             border: `1px solid ${BORDER}`, background: CARD,
-            fontSize: 18, color: TERRA, cursor: "pointer", fontWeight: 700,
+            fontSize: 20, color: TERRA, cursor: "pointer", fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
+            lineHeight: 1,
           }}
         >+</button>
       </div>
@@ -87,13 +125,28 @@ function Stepper({ label, value, onChange }) {
   );
 }
 
-// ── Field Log Tab ──────────────────────────────────────────────────────────
-function FieldLogTab({ onSubmitSuccess }) {
+// ── Toast ─────────────────────────────────────────────────────────────────
+function Toast({ msg, type }) {
+  if (!msg) return null;
+  return (
+    <div style={{
+      position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
+      background: type === "success" ? "#2E7D32" : "#B71C1C",
+      color: "#fff", borderRadius: 10, padding: "10px 22px",
+      fontSize: 14, fontWeight: 600, zIndex: 999,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      whiteSpace: "nowrap",
+    }}>{msg}</div>
+  );
+}
+
+// ── FIELD LOG TAB ─────────────────────────────────────────────────────────
+function FieldLogTab({ onSuccess }) {
   const [movementType, setMovementType] = useState("");
   const [cases, setCases] = useState(0);
   const [looseCans, setLooseCans] = useState(0);
   const [notes, setNotes] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [status, setStatus] = useState("idle");
   const [toast, setToast] = useState(null);
 
   const totalCans = cases * 12 + looseCans;
@@ -109,38 +162,47 @@ function FieldLogTab({ onSubmitSuccess }) {
     setStatus("loading");
 
     const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    // Week start = Monday
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const weekStart = new Date(now);
+    weekStart.setDate(diff);
+    const fmt = (d) => d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+    const dateStr = fmt(now);
+    const weekStr = fmt(weekStart);
 
-    const payload = {
-      action: "fieldLog",
-      date: dateStr,
-      time: timeStr,
-      movementType,
-      sheetCategory: getSheetCategory(movementType),
-      cases,
-      cans: looseCans,
-      totalCans,
-      notes,
-    };
+    const sheetLocation = getSheetLocation(movementType);
+
+    // 10-col Ledger row
+    const row = [
+      weekStr,          // WEEK START
+      dateStr,          // DATE
+      "Airdrome Garage",// LOCATION FROM
+      sheetLocation,    // LOCATION TO
+      movementType,     // MOVEMENT TYPE
+      cases,            // CASES
+      looseCans,        // CANS
+      totalCans,        // TOTAL CANS
+      notes,            // NOTES
+      "Field Log",      // SOURCE
+    ];
 
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ action: "fieldLog", row }),
       });
       setStatus("success");
       showToast(`✓ Logged ${totalCans} cans — ${movementType}`, "success");
-      // Reset
       setMovementType("");
       setCases(0);
       setLooseCans(0);
       setNotes("");
       setTimeout(() => {
         setStatus("idle");
-        onSubmitSuccess && onSubmitSuccess();
+        onSuccess && onSuccess();
       }, 2000);
     } catch {
       setStatus("error");
@@ -152,53 +214,57 @@ function FieldLogTab({ onSubmitSuccess }) {
   return (
     <div style={{ padding: "16px 16px 100px" }}>
       {/* Movement Type */}
-      <SectionHeader>Movement Type</SectionHeader>
-      <div style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: "hidden", marginBottom: 16 }}>
-        {MOVEMENT_CATEGORIES.map((cat, ci) => (
-          <div key={cat.category}>
+      <div style={s.sectionLabel}>Movement Type</div>
+      <div style={{ ...s.card, overflow: "hidden" }}>
+        {CATEGORIES.map((cat, ci) => (
+          <div key={cat.label}>
             <div style={{
               padding: "8px 14px 4px",
-              fontSize: 11, fontWeight: 700, letterSpacing: 1,
+              fontSize: 10, fontWeight: 700, letterSpacing: 1,
               color: "#8B7355", textTransform: "uppercase",
               borderTop: ci > 0 ? `1px solid ${BORDER}` : "none",
+              background: "#F9F4EE",
             }}>
-              {cat.category}
+              {cat.label}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "4px 10px 10px" }}>
-              {cat.items.map(item => (
-                <button
-                  key={item}
-                  onClick={() => setMovementType(item)}
-                  style={{
-                    padding: "10px 6px",
-                    borderRadius: 8,
-                    border: movementType === item ? `2px solid ${TERRA}` : `1px solid ${BORDER}`,
-                    background: movementType === item ? "#FDE8DE" : "#fff",
-                    color: movementType === item ? TERRA : DARK,
-                    fontWeight: movementType === item ? 700 : 400,
-                    fontSize: 13,
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    gridColumn: cat.items.length % 2 !== 0 && item === cat.items[cat.items.length - 1] ? "1 / -1" : undefined,
-                  }}
-                >
-                  {item}
-                </button>
-              ))}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: cat.items.length === 1 ? "1fr" : "1fr 1fr",
+              gap: 8, padding: "8px 10px 10px",
+            }}>
+              {cat.items.map((item, idx) => {
+                const isLast = idx === cat.items.length - 1;
+                const isOdd = cat.items.length % 2 !== 0;
+                return (
+                  <button
+                    key={item}
+                    onClick={() => setMovementType(item)}
+                    style={{
+                      padding: "10px 6px",
+                      borderRadius: 8,
+                      border: movementType === item ? `2px solid ${TERRA}` : `1px solid ${BORDER}`,
+                      background: movementType === item ? "#FDE8DE" : "#fff",
+                      color: movementType === item ? TERRA : DARK,
+                      fontWeight: movementType === item ? 700 : 400,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      transition: "all 0.12s",
+                      gridColumn: isLast && isOdd ? "1 / -1" : undefined,
+                    }}
+                  >{item}</button>
+                );
+              })}
             </div>
           </div>
         ))}
       </div>
 
       {/* Quantity */}
-      <SectionHeader>Quantity</SectionHeader>
-      <div style={{
-        background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`,
-        padding: "16px 12px", marginBottom: 16,
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", gap: 12 }}>
+      <div style={s.sectionLabel}>Quantity</div>
+      <div style={{ ...s.card, padding: "16px 12px" }}>
+        <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
           <Stepper label="Cases (×12)" value={cases} onChange={setCases} />
-          <div style={{ width: 1, height: 50, background: BORDER }} />
+          <div style={{ width: 1, height: 52, background: BORDER }} />
           <Stepper label="Loose Cans" value={looseCans} onChange={setLooseCans} />
         </div>
         <div style={{
@@ -206,26 +272,21 @@ function FieldLogTab({ onSubmitSuccess }) {
           background: totalCans > 0 ? DARK : "#E8DDD0",
           borderRadius: 8, padding: "10px 16px",
           display: "flex", justifyContent: "space-between", alignItems: "center",
+          transition: "background 0.2s",
         }}>
-          <span style={{ color: totalCans > 0 ? "#C4916A" : "#8B7355", fontSize: 13, fontWeight: 600 }}>Total cans</span>
+          <span style={{ color: totalCans > 0 ? GOLD : "#8B7355", fontSize: 13, fontWeight: 600 }}>Total cans</span>
           <span style={{ color: totalCans > 0 ? "#fff" : "#8B7355", fontSize: 22, fontWeight: 800 }}>{totalCans}</span>
         </div>
       </div>
 
       {/* Notes */}
-      <SectionHeader>Notes (Optional)</SectionHeader>
+      <div style={s.sectionLabel}>Notes (Optional)</div>
       <textarea
         value={notes}
         onChange={e => setNotes(e.target.value)}
         placeholder="e.g. Venice pop-up..."
         rows={2}
-        style={{
-          width: "100%", boxSizing: "border-box",
-          borderRadius: 10, border: `1px solid ${BORDER}`,
-          padding: "10px 14px", fontSize: 14, color: DARK,
-          background: CARD, resize: "none", outline: "none",
-          fontFamily: "inherit", marginBottom: 20,
-        }}
+        style={{ ...s.input, resize: "none", marginBottom: 20 }}
       />
 
       {/* Submit */}
@@ -241,78 +302,61 @@ function FieldLogTab({ onSubmitSuccess }) {
           transition: "background 0.3s",
         }}
       >
-        {status === "loading" ? "Logging…" : status === "success" ? "✓ Logged!" : `Log ${totalCans > 0 ? totalCans + " cans" : "entry"}${movementType ? " — " + movementType : ""}`}
+        {status === "loading" ? "Logging…"
+          : status === "success" ? "✓ Logged!"
+          : `Log ${totalCans > 0 ? totalCans + " cans" : "entry"}${movementType ? " — " + movementType : ""}`}
       </button>
 
-      {toast && (
-        <div style={{
-          position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)",
-          background: toast.type === "success" ? "#2E7D32" : "#B71C1C",
-          color: "#fff", borderRadius: 10, padding: "10px 20px",
-          fontSize: 14, fontWeight: 600, zIndex: 999,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-          whiteSpace: "nowrap",
-        }}>
-          {toast.msg}
-        </div>
-      )}
+      <Toast msg={toast?.msg} type={toast?.type} />
     </div>
   );
 }
 
-// ── Inventory Count Tab ────────────────────────────────────────────────────
-const FIXED_LOCATIONS = [
+// ── INVENTORY COUNT TAB ───────────────────────────────────────────────────
+const FIXED_LOCS = [
   "Full pallets", "Garage — other", "Garage fridge",
   "Outdoor fridge", "Airdrome", "David's car", "Sophy's car",
 ];
 
 function InventoryCountTab() {
-  const [locations, setLocations] = useState(
-    Object.fromEntries(FIXED_LOCATIONS.map(l => [l, { cases: "", cans: "" }]))
-  );
-  const [extraLocations, setExtraLocations] = useState([]);
+  const initLocs = () => Object.fromEntries(FIXED_LOCS.map(l => [l, { cases: "", cans: "" }]));
+  const [locs, setLocs] = useState(initLocs());
+  const [extraLocs, setExtraLocs] = useState([]);
   const [newLocName, setNewLocName] = useState("");
-  const [notes, setNotes] = useState("");
   const [ledgerExpected, setLedgerExpected] = useState("");
+  const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("idle");
   const [toast, setToast] = useState(null);
 
-  function allLocations() {
-    const all = {};
-    FIXED_LOCATIONS.forEach(l => { all[l] = locations[l]; });
-    extraLocations.forEach(l => { all[l.name] = l; });
-    return all;
-  }
-
   function totalCans() {
     let t = 0;
-    FIXED_LOCATIONS.forEach(l => {
-      t += (parseFloat(locations[l].cases) || 0) * 12 + (parseInt(locations[l].cans) || 0);
+    FIXED_LOCS.forEach(l => {
+      t += (parseFloat(locs[l].cases) || 0) * 12 + (parseInt(locs[l].cans) || 0);
     });
-    extraLocations.forEach(l => {
+    extraLocs.forEach(l => {
       t += (parseFloat(l.cases) || 0) * 12 + (parseInt(l.cans) || 0);
     });
     return t;
   }
 
-  function totalCasesFloat() {
-    return totalCans() / 12;
+  function totalCasesDisplay() {
+    const v = totalCans() / 12;
+    // Round to max 2 decimal places, strip trailing zeros
+    return parseFloat(v.toFixed(2));
   }
 
   const variance = ledgerExpected !== "" ? totalCans() - parseInt(ledgerExpected) : null;
 
   function updateFixed(loc, field, val) {
-    setLocations(prev => ({ ...prev, [loc]: { ...prev[loc], [field]: val } }));
+    setLocs(prev => ({ ...prev, [loc]: { ...prev[loc], [field]: val } }));
   }
-
   function updateExtra(idx, field, val) {
-    setExtraLocations(prev => prev.map((l, i) => i === idx ? { ...l, [field]: val } : l));
+    setExtraLocs(prev => prev.map((l, i) => i === idx ? { ...l, [field]: val } : l));
   }
-
-  function addLocation() {
+  function addLoc() {
     const name = newLocName.trim();
     if (!name) return;
-    setExtraLocations(prev => [...prev, { name, cases: "", cans: "" }]);
+    setExtraLocs(prev => [...prev, { name, cases: "", cans: "" }]);
     setNewLocName("");
   }
 
@@ -324,34 +368,33 @@ function InventoryCountTab() {
   async function handleSubmit() {
     setStatus("loading");
     const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    const day = now.getDay();
+    weekStart.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
-    const weekOf = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
-
-    const payload = {
-      action: "inventoryCount",
-      date: dateStr,
-      time: timeStr,
-      weekOf,
-      totalCases: totalCasesFloat().toFixed(2),
-      totalLooseCans: 0,
-      totalCans: totalCans(),
-      ledgerExpected: ledgerExpected || "",
-      variance: variance !== null ? variance : "",
-      locations: JSON.stringify(allLocations()),
-      notes,
-    };
+    const allLocs = {};
+    FIXED_LOCS.forEach(l => { allLocs[l] = locs[l]; });
+    extraLocs.forEach(l => { allLocs[l.name] = { cases: l.cases, cans: l.cans }; });
 
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          action: "inventoryCount",
+          date: fmt(now),
+          time: now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+          weekOf: `${fmt(weekStart)} – ${fmt(weekEnd)}`,
+          totalCases: totalCasesDisplay(),
+          totalCans: totalCans(),
+          ledgerExpected: ledgerExpected || "",
+          variance: variance !== null ? variance : "",
+          locations: JSON.stringify(allLocs),
+          notes,
+        }),
       });
       setStatus("success");
       showToast("✓ Count submitted!", "success");
@@ -363,107 +406,110 @@ function InventoryCountTab() {
     }
   }
 
-  function LocationRow({ label, data, onUpdate }) {
+  const inputSm = {
+    ...s.input,
+    padding: "7px 8px",
+    fontSize: 13,
+    borderRadius: 7,
+  };
+
+  function LocRow({ label, data, onUpdate }) {
     const rowCans = (parseFloat(data.cases) || 0) * 12 + (parseInt(data.cans) || 0);
     return (
       <div style={{
-        display: "grid", gridTemplateColumns: "1fr 90px 90px 60px",
-        gap: 8, alignItems: "center",
-        padding: "10px 0", borderBottom: `1px solid ${BORDER}`,
+        display: "grid",
+        gridTemplateColumns: "minmax(90px,1fr) 78px 78px 48px",
+        gap: 6, alignItems: "center",
+        padding: "9px 0",
+        borderBottom: `1px solid ${BORDER}`,
       }}>
-        <span style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 13, color: DARK, fontWeight: 500, paddingRight: 4 }}>{label}</span>
         <input
-          type="number" min="0" step="0.5"
-          placeholder="Cases"
+          type="number" min="0" step="0.5" placeholder="Cases"
           value={data.cases}
           onChange={e => onUpdate("cases", e.target.value)}
-          style={inputStyle}
+          style={inputSm}
         />
         <input
-          type="number" min="0"
-          placeholder="Cans"
+          type="number" min="0" placeholder="Cans"
           value={data.cans}
           onChange={e => onUpdate("cans", e.target.value)}
-          style={inputStyle}
+          style={inputSm}
         />
-        <span style={{ fontSize: 13, color: "#8B7355", textAlign: "right", fontWeight: 600 }}>
+        <span style={{ fontSize: 12, color: "#8B7355", textAlign: "right", fontWeight: 600 }}>
           {rowCans > 0 ? rowCans : "—"}
         </span>
       </div>
     );
   }
 
-  const inputStyle = {
-    padding: "7px 8px", borderRadius: 7, border: `1px solid ${BORDER}`,
-    background: "#fff", fontSize: 14, color: DARK, outline: "none",
-    width: "100%", boxSizing: "border-box",
-  };
-
   return (
     <div style={{ padding: "16px 16px 100px" }}>
-      <SectionHeader>Weekly Count</SectionHeader>
+      <div style={s.sectionLabel}>Weekly Count</div>
 
       {/* Column headers */}
       <div style={{
-        display: "grid", gridTemplateColumns: "1fr 90px 90px 60px",
-        gap: 8, padding: "0 0 6px",
+        display: "grid",
+        gridTemplateColumns: "minmax(90px,1fr) 78px 78px 48px",
+        gap: 6, paddingBottom: 6,
       }}>
-        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Location</span>
-        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Cases</span>
-        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Cans</span>
-        <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, textAlign: "right" }}>Total</span>
+        {["Location", "Cases", "Cans", "Total"].map((h, i) => (
+          <span key={h} style={{
+            fontSize: 10, color: "#8B7355", fontWeight: 700,
+            textTransform: "uppercase", letterSpacing: 0.8,
+            textAlign: i === 3 ? "right" : "left",
+          }}>{h}</span>
+        ))}
       </div>
 
-      <div style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "0 14px", marginBottom: 16 }}>
-        {FIXED_LOCATIONS.map(loc => (
-          <LocationRow
-            key={loc}
-            label={loc}
-            data={locations[loc]}
+      <div style={{ ...s.card, padding: "0 14px" }}>
+        {FIXED_LOCS.map(loc => (
+          <LocRow
+            key={loc} label={loc} data={locs[loc]}
             onUpdate={(field, val) => updateFixed(loc, field, val)}
           />
         ))}
-        {extraLocations.map((loc, i) => (
-          <LocationRow
-            key={loc.name}
-            label={loc.name}
-            data={loc}
+        {extraLocs.map((loc, i) => (
+          <LocRow
+            key={loc.name} label={loc.name} data={loc}
             onUpdate={(field, val) => updateExtra(i, field, val)}
           />
         ))}
-        {/* Add location row */}
+        {/* Add location */}
         <div style={{ display: "flex", gap: 8, padding: "10px 0" }}>
           <input
-            type="text"
-            placeholder="+ Add location"
+            type="text" placeholder="+ Add location"
             value={newLocName}
             onChange={e => setNewLocName(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addLocation()}
-            style={{ ...inputStyle, flex: 1 }}
+            onKeyDown={e => e.key === "Enter" && addLoc()}
+            style={{ ...inputSm, flex: 1 }}
           />
-          <button onClick={addLocation} style={{
-            padding: "7px 14px", borderRadius: 7, border: `1px solid ${TERRA}`,
-            background: "transparent", color: TERRA, fontWeight: 700, fontSize: 13, cursor: "pointer",
+          <button onClick={addLoc} style={{
+            padding: "7px 14px", borderRadius: 7,
+            border: `1px solid ${TERRA}`, background: "transparent",
+            color: TERRA, fontWeight: 700, fontSize: 13, cursor: "pointer",
           }}>Add</button>
         </div>
       </div>
 
       {/* Totals card */}
-      <div style={{ background: DARK, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+      <div style={{
+        background: DARK, borderRadius: 12, padding: "14px 16px", marginBottom: 16,
+      }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <span style={{ color: "#C4916A", fontSize: 13 }}>Total cases</span>
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{totalCasesFloat().toFixed(2)}</span>
+          <span style={{ color: GOLD, fontSize: 13 }}>Total cases</span>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{totalCasesDisplay()}</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: ledgerExpected !== "" ? 10 : 0 }}>
-          <span style={{ color: "#C4916A", fontSize: 13 }}>Total cans</span>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: variance !== null ? 10 : 0 }}>
+          <span style={{ color: GOLD, fontSize: 13 }}>Total cans</span>
           <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{totalCans()}</span>
         </div>
-        {ledgerExpected !== "" && variance !== null && (
+        {variance !== null && (
           <div style={{
             display: "flex", justifyContent: "space-between",
             borderTop: "1px solid #4a3020", paddingTop: 10,
           }}>
-            <span style={{ color: "#C4916A", fontSize: 13 }}>Variance</span>
+            <span style={{ color: GOLD, fontSize: 13 }}>Variance vs ledger</span>
             <span style={{
               fontWeight: 700, fontSize: 16,
               color: Math.abs(variance) <= 12 ? "#81C784" : Math.abs(variance) <= 24 ? "#FFD54F" : "#E57373",
@@ -475,28 +521,21 @@ function InventoryCountTab() {
       </div>
 
       {/* Ledger expected */}
-      <SectionHeader>Ledger Expected (optional)</SectionHeader>
+      <div style={s.sectionLabel}>Ledger Expected (optional)</div>
       <input
-        type="number"
-        placeholder="e.g. 1440"
+        type="number" placeholder="e.g. 1440"
         value={ledgerExpected}
         onChange={e => setLedgerExpected(e.target.value)}
-        style={{ ...inputStyle, marginBottom: 16, display: "block", width: "100%", boxSizing: "border-box" }}
+        style={{ ...s.input, marginBottom: 16 }}
       />
 
-      <SectionHeader>Notes (Optional)</SectionHeader>
+      <div style={s.sectionLabel}>Notes (Optional)</div>
       <textarea
         value={notes}
         onChange={e => setNotes(e.target.value)}
         placeholder="Any notes about this count..."
         rows={2}
-        style={{
-          width: "100%", boxSizing: "border-box",
-          borderRadius: 10, border: `1px solid ${BORDER}`,
-          padding: "10px 14px", fontSize: 14, color: DARK,
-          background: CARD, resize: "none", outline: "none",
-          fontFamily: "inherit", marginBottom: 20,
-        }}
+        style={{ ...s.input, resize: "none", marginBottom: 20 }}
       />
 
       <button
@@ -513,23 +552,12 @@ function InventoryCountTab() {
         {status === "loading" ? "Submitting…" : status === "success" ? "✓ Submitted!" : "Submit Count"}
       </button>
 
-      {toast && (
-        <div style={{
-          position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)",
-          background: toast.type === "success" ? "#2E7D32" : "#B71C1C",
-          color: "#fff", borderRadius: 10, padding: "10px 20px",
-          fontSize: 14, fontWeight: 600, zIndex: 999,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-          whiteSpace: "nowrap",
-        }}>
-          {toast.msg}
-        </div>
-      )}
+      <Toast msg={toast?.msg} type={toast?.type} />
     </div>
   );
 }
 
-// ── Dashboard Tab ──────────────────────────────────────────────────────────
+// ── DASHBOARD TAB ─────────────────────────────────────────────────────────
 function DashboardTab({ refreshKey }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -552,61 +580,93 @@ function DashboardTab({ refreshKey }) {
   useEffect(() => { fetchData(); }, [fetchData, refreshKey]);
 
   if (loading) return (
-    <div style={{ padding: 32, textAlign: "center", color: "#8B7355" }}>
-      Loading dashboard…
-    </div>
+    <div style={{ padding: 40, textAlign: "center", color: "#8B7355" }}>Loading dashboard…</div>
   );
-
   if (error || !data) return (
-    <div style={{ padding: 32, textAlign: "center" }}>
+    <div style={{ padding: 40, textAlign: "center" }}>
       <div style={{ color: "#B71C1C", marginBottom: 12 }}>Couldn't load dashboard</div>
       <button onClick={fetchData} style={{
-        padding: "8px 20px", borderRadius: 8, border: `1px solid ${TERRA}`,
-        background: "transparent", color: TERRA, fontWeight: 700, cursor: "pointer",
+        padding: "8px 20px", borderRadius: 8,
+        border: `1px solid ${TERRA}`, background: "transparent",
+        color: TERRA, fontWeight: 700, cursor: "pointer",
       }}>Retry</button>
     </div>
   );
 
-  const { airdrome = 0, thirdParty = 0, totalOnHand = 0, weekCans = 0, recentEntries = [] } = data;
-
-  function StatCard({ label, value, accent }) {
-    return (
-      <div style={{
-        background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`,
-        padding: "14px 16px", flex: 1,
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#8B7355", textTransform: "uppercase", marginBottom: 6 }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 26, fontWeight: 800, color: accent || DARK }}>
-          {Math.round(value)}
-        </div>
-      </div>
-    );
-  }
+  const {
+    airdromeCases = 0,
+    thirdPartyCases = 0,
+    totalCases = 0,
+    weeklyUsage = { Customer: 0, Retail: 0, Marketing: 0 },
+    thisWeekCans = 0,
+    thisWeekCases = 0,
+    recentEntries = [],
+  } = data;
 
   return (
     <div style={{ padding: "16px 16px 100px" }}>
+
+      {/* Total On Hand */}
+      <div style={s.sectionLabel}>Total On Hand</div>
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-        <StatCard label="Airdrome" value={airdrome} />
-        <StatCard label="3PL / Other" value={thirdParty} />
-        <StatCard label="Total" value={totalOnHand} accent={TERRA} />
+        {[
+          { label: "Airdrome", value: airdromeCases },
+          { label: "3PL", value: thirdPartyCases },
+          { label: "Total", value: totalCases, accent: true },
+        ].map(({ label, value, accent }) => (
+          <div key={label} style={{
+            ...s.card,
+            flex: 1, marginBottom: 0,
+            padding: "12px 14px",
+            background: accent ? DARK : CARD,
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: accent ? GOLD : "#8B7355", marginBottom: 4 }}>
+              {label}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: accent ? "#fff" : DARK }}>
+              {Math.round(value)}
+            </div>
+            <div style={{ fontSize: 10, color: accent ? GOLD : "#8B7355", marginTop: 2 }}>cases</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Usage by category */}
+      <div style={s.sectionLabel}>Usage (Cases)</div>
+      <div style={{ ...s.card, padding: "0 0" }}>
+        {[
+          { label: "Customer", value: weeklyUsage.Customer },
+          { label: "Retail", value: weeklyUsage.Retail },
+          { label: "Marketing", value: weeklyUsage.Marketing },
+        ].map(({ label, value }, i, arr) => (
+          <div key={label} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "12px 16px",
+            borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : "none",
+          }}>
+            <span style={{ fontSize: 14, color: DARK }}>{label}</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: TERRA }}>{Math.round(value)}</span>
+          </div>
+        ))}
       </div>
 
       {/* This week */}
-      <SectionHeader>This Week</SectionHeader>
-      <div style={{
-        background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`,
-        padding: "14px 16px", marginBottom: 16,
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <span style={{ fontSize: 14, color: "#8B7355" }}>Cans used</span>
-        <span style={{ fontSize: 22, fontWeight: 800, color: DARK }}>{Math.round(weekCans)}</span>
+      <div style={s.sectionLabel}>This Week</div>
+      <div style={{ ...s.card, padding: "12px 16px", display: "flex", gap: 16 }}>
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Cans</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: DARK }}>{Math.round(thisWeekCans)}</div>
+        </div>
+        <div style={{ width: 1, background: BORDER }} />
+        <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "#8B7355", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Cases</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: DARK }}>{Math.round(thisWeekCases)}</div>
+        </div>
       </div>
 
       {/* Recent entries */}
-      <SectionHeader>Recent Entries</SectionHeader>
-      <div style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+      <div style={s.sectionLabel}>Recent Entries</div>
+      <div style={{ ...s.card, overflow: "hidden" }}>
         {recentEntries.length === 0 ? (
           <div style={{ padding: 20, color: "#8B7355", fontSize: 14, textAlign: "center" }}>No entries yet</div>
         ) : recentEntries.map((entry, i) => (
@@ -615,13 +675,19 @@ function DashboardTab({ refreshKey }) {
             padding: "11px 14px",
             borderBottom: i < recentEntries.length - 1 ? `1px solid ${BORDER}` : "none",
           }}>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{entry.movementType}</div>
-              <div style={{ fontSize: 11, color: "#8B7355", marginTop: 2 }}>{entry.date}</div>
+              {entry.notes && (
+                <div style={{ fontSize: 11, color: "#8B7355", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {entry.notes}
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>{entry.date}</div>
             </div>
             <div style={{
-              fontSize: 15, fontWeight: 800, color: TERRA,
+              fontSize: 14, fontWeight: 800, color: TERRA,
               background: "#FDE8DE", borderRadius: 8, padding: "4px 10px",
+              marginLeft: 10, whiteSpace: "nowrap",
             }}>
               {Math.round(entry.totalCans)} cans
             </div>
@@ -629,86 +695,76 @@ function DashboardTab({ refreshKey }) {
         ))}
       </div>
 
-      <div style={{ textAlign: "right", marginTop: 10 }}>
+      <div style={{ textAlign: "right", marginTop: 8 }}>
         <button onClick={fetchData} style={{
-          fontSize: 12, color: "#8B7355", background: "none", border: "none",
-          cursor: "pointer", textDecoration: "underline",
+          fontSize: 12, color: "#8B7355", background: "none",
+          border: "none", cursor: "pointer", textDecoration: "underline",
         }}>Refresh</button>
       </div>
     </div>
   );
 }
 
-// ── Shared section header ──────────────────────────────────────────────────
-function SectionHeader({ children }) {
-  return (
-    <div style={{
-      fontSize: 11, fontWeight: 700, letterSpacing: 1.2,
-      color: "#8B7355", textTransform: "uppercase",
-      marginBottom: 8, paddingLeft: 2,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-// ── App Shell ──────────────────────────────────────────────────────────────
+// ── APP SHELL ─────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("fieldlog");
-  const [dashRefreshKey, setDashRefreshKey] = useState(0);
+  const [dashRefresh, setDashRefresh] = useState(0);
 
-  function handleFieldLogSuccess() {
-    // Auto-refresh dashboard after a field log entry
-    setDashRefreshKey(k => k + 1);
-  }
-
-  const tabs = [
-    { id: "fieldlog", label: "Field Log" },
+  const TABS = [
+    { id: "fieldlog",  label: "Field Log" },
     { id: "inventory", label: "Inventory Count" },
     { id: "dashboard", label: "Dashboard" },
   ];
 
   return (
     <div style={{ minHeight: "100vh", background: CREAM, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      {/* Fixed header */}
+
+      {/* Fixed header + tab bar */}
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         background: TERRA,
-        boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
       }}>
-        {/* Logo bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", gap: 10 }}>
-          <img src={BADGE_URL} alt="SOLZI" style={{ height: 28, width: 28, objectFit: "contain", filter: "brightness(10)" }} />
-          <span style={{ color: "#fff", fontWeight: 800, fontSize: 18, letterSpacing: 2 }}>SOLZI</span>
+        {/* Logo row */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          gap: 8, padding: "10px 16px 2px",
+        }}>
+          <img
+            src="https://drinksolzi.com/cdn/shop/files/SOLZI_Secondary_Logo_Terracotta.png"
+            alt="SOLZI"
+            style={{ height: 26, width: 26, objectFit: "contain", filter: "brightness(10)" }}
+            onError={e => { e.target.style.display = "none"; }}
+          />
+          <span style={{ color: "#fff", fontWeight: 800, fontSize: 17, letterSpacing: 2.5 }}>SOLZI</span>
         </div>
-        {/* Tab bar */}
+        {/* Tabs */}
         <div style={{ display: "flex" }}>
-          {tabs.map(t => (
+          {TABS.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               style={{
-                flex: 1, padding: "8px 4px", border: "none",
-                background: tab === t.id ? "rgba(255,255,255,0.2)" : "transparent",
-                color: tab === t.id ? "#fff" : "rgba(255,255,255,0.65)",
+                flex: 1, padding: "8px 4px 9px",
+                border: "none", background: "transparent",
+                color: tab === t.id ? "#fff" : "rgba(255,255,255,0.6)",
                 fontWeight: tab === t.id ? 700 : 400,
                 fontSize: 12, cursor: "pointer",
-                borderBottom: tab === t.id ? "2px solid #fff" : "2px solid transparent",
+                borderBottom: tab === t.id ? "2.5px solid #fff" : "2.5px solid transparent",
                 transition: "all 0.15s",
-                letterSpacing: 0.3,
+                letterSpacing: 0.2,
+                fontFamily: "inherit",
               }}
-            >
-              {t.label}
-            </button>
+            >{t.label}</button>
           ))}
         </div>
       </div>
 
-      {/* Content — offset by header height */}
-      <div style={{ paddingTop: 82 }}>
-        {tab === "fieldlog" && <FieldLogTab onSubmitSuccess={handleFieldLogSuccess} />}
+      {/* Scrollable content — offset below fixed header */}
+      <div style={{ paddingTop: 80 }}>
+        {tab === "fieldlog"  && <FieldLogTab onSuccess={() => setDashRefresh(k => k + 1)} />}
         {tab === "inventory" && <InventoryCountTab />}
-        {tab === "dashboard" && <DashboardTab refreshKey={dashRefreshKey} />}
+        {tab === "dashboard" && <DashboardTab refreshKey={dashRefresh} />}
       </div>
     </div>
   );
